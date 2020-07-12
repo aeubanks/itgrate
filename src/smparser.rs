@@ -106,7 +106,10 @@ pub fn parse_sm(s: &str) -> Option<Vec<Vec<Note>>> {
 }
 
 fn line_is_notes(l: &str) -> bool {
-    l.chars().all(|c| c == '0' || c == '1' || c == '2')
+    l.chars().all(|c| match c {
+        '0' | '1' | '2' | '3' | '4' | 'M' | 'L' | 'F' => true,
+        _ => false,
+    })
 }
 
 fn parse_measure(lines: &mut Lines, measure_count: i32) -> Option<Vec<Note>> {
@@ -123,7 +126,7 @@ fn parse_measure(lines: &mut Lines, measure_count: i32) -> Option<Vec<Note>> {
         let time = line_idx as f32 / measure_line_count as f32 + measure_count as f32;
         let num_cols = l.len();
         for (col, c) in l.chars().enumerate() {
-            if c == '1' || c == '2' {
+            if c == '1' || c == '2' || c == '4' || c == 'L' {
                 ret.push(Note {
                     pos: col_to_pos(col, num_cols),
                     time,
@@ -232,5 +235,27 @@ fn test_parse_sm() {
                 time: 0.
             }]
         ])
+    );
+
+    assert_eq!(
+        parse_sm("#NOTES:\n1234\n0000\nLFM0\n0000\n;\n"),
+        Some(vec![vec![
+            Note {
+                pos: Pos { x: 0., y: 1. },
+                time: 0.
+            },
+            Note {
+                pos: Pos { x: 1., y: 0. },
+                time: 0.
+            },
+            Note {
+                pos: Pos { x: 2., y: 1. },
+                time: 0.
+            },
+            Note {
+                pos: Pos { x: 0., y: 1. },
+                time: 0.5
+            }
+        ]])
     );
 }
