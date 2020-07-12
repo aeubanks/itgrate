@@ -10,12 +10,15 @@ mod smparser;
 struct Opts {
     #[structopt(parse(from_os_str))]
     input: PathBuf,
+
+    #[structopt(short = "v")]
+    verbose: bool,
 }
 
 fn main() -> std::io::Result<()> {
     let opts = Opts::from_args();
     let s = std::fs::read_to_string(opts.input)?;
-    let notes = smparser::parse_sm(&s);
+    let notes = smparser::parse_sm(&s, opts.verbose);
     println!("{:?}", notes);
     Ok(())
 }

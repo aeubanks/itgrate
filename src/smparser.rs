@@ -5,13 +5,18 @@ use std::option::Option;
 struct Lines {
     idx: usize,
     lines: Vec<String>,
+    verbose: bool,
 }
 
 impl Lines {
     fn new(s: &str) -> Self {
+        Self::with_verbosity(s, false)
+    }
+    fn with_verbosity(s: &str, verbose: bool) -> Self {
         Self {
             idx: 0,
             lines: s.lines().map(|s| s.to_owned()).collect(),
+            verbose,
         }
     }
     fn is_valid(&self) -> bool {
@@ -31,7 +36,11 @@ impl Lines {
     fn peek(&mut self) -> Option<&str> {
         self.skip_bad_lines();
         if self.is_valid() {
-            Some(&self.lines[self.idx])
+            let ret = &self.lines[self.idx];
+            if self.verbose {
+                println!("peeking at line: {}", ret);
+            }
+            Some(ret)
         } else {
             None
         }
@@ -40,6 +49,9 @@ impl Lines {
         self.skip_bad_lines();
         if self.is_valid() {
             let ret = &self.lines[self.idx];
+            if self.verbose {
+                println!("consuming line:  {}", ret);
+            }
             self.idx += 1;
             Some(ret)
         } else {
@@ -83,9 +95,9 @@ fn test_lines() {
     assert_eq!(lines4.consume(), None);
 }
 
-pub fn parse_sm(s: &str) -> Option<Vec<Vec<Note>>> {
+pub fn parse_sm(s: &str, verbose: bool) -> Option<Vec<Vec<Note>>> {
     let mut ret = Vec::new();
-    let mut lines = Lines::new(s);
+    let mut lines = Lines::with_verbosity(s, verbose);
 
     while let Some(l) = lines.consume() {
         if l == "#NOTES:" {
@@ -161,21 +173,21 @@ fn parse_notes(lines: &mut Lines) -> Option<Vec<Note>> {
 fn test_parse_sm() {
     use crate::note::Pos;
 
-    assert_eq!(parse_sm(""), Some(vec![]));
+    assert_eq!(parse_sm("", false), Some(vec![]));
 
-    assert_eq!(parse_sm("#NOTES:\n"), None);
+    assert_eq!(parse_sm("#NOTES:\n", false), None);
 
-    assert_eq!(parse_sm("#NOTES:\n;\n"), None);
+    assert_eq!(parse_sm("#NOTES:\n;\n", false), None);
 
-    assert_eq!(parse_sm("#NOTES:\n0000\n0000\n0000\n0000\n"), None);
+    assert_eq!(parse_sm("#NOTES:\n0000\n0000\n0000\n0000\n", false), None);
 
     assert_eq!(
-        parse_sm("#NOTES:\n0000\n0000\n0000\n0000\n;\n"),
+        parse_sm("#NOTES:\n0000\n0000\n0000\n0000\n;\n", false),
         Some(vec![vec![]])
     );
 
     assert_eq!(
-        parse_sm("#NOTES:\n1000\n0000\n0000\n0000\n;\n"),
+        parse_sm("#NOTES:\n1000\n0000\n0000\n0000\n;\n", false),
         Some(vec![vec![Note {
             pos: Pos { x: 0., y: 1. },
             time: 0.
@@ -183,7 +195,7 @@ fn test_parse_sm() {
     );
 
     assert_eq!(
-        parse_sm("#NOTES:\n0011\n0000\n0000\n0000\n;\n"),
+        parse_sm("#NOTES:\n0011\n0000\n0000\n0000\n;\n", false),
         Some(vec![vec![
             Note {
                 pos: Pos { x: 1., y: 2. },
@@ -197,7 +209,7 @@ fn test_parse_sm() {
     );
 
     assert_eq!(
-        parse_sm("#NOTES:\n0000\n0000\n0010\n0000\n;\n"),
+        parse_sm("#NOTES:\n0000\n0000\n0010\n0000\n;\n", false),
         Some(vec![vec![Note {
             pos: Pos { x: 1., y: 2. },
             time: 0.5
@@ -205,7 +217,7 @@ fn test_parse_sm() {
     );
 
     assert_eq!(
-        parse_sm("#NOTES:\n0000\n0000\n0100\n0000\n,\n0000\n0010\n0000\n0000\n;\n"),
+        parse_sm("#NOTES:\n0000\n0000\n0100\n0000\n,\n0000\n0010\n0000\n0000\n;\n", false),
         Some(vec![vec![
             Note {
                 pos: Pos { x: 1., y: 0. },
@@ -219,12 +231,12 @@ fn test_parse_sm() {
     );
 
     assert_eq!(
-        parse_sm("#NOTES:\n0000\n0000\n0000\n0000\n;\n\n#NOTES:\n0000\n;"),
+        parse_sm("#NOTES:\n0000\n0000\n0000\n0000\n;\n\n#NOTES:\n0000\n;", false),
         Some(vec![vec![], vec![]])
     );
 
     assert_eq!(
-        parse_sm("#NOTES:\n0000\n0000\n0000\n1000\n;\n\n#NOTES:\n1000\n;"),
+        parse_sm("#NOTES:\n0000\n0000\n0000\n1000\n;\n\n#NOTES:\n1000\n;", false),
         Some(vec![
             vec![Note {
                 pos: Pos { x: 0., y: 1. },
@@ -238,7 +250,7 @@ fn test_parse_sm() {
     );
 
     assert_eq!(
-        parse_sm("#NOTES:\n1234\n0000\nLFM0\n0000\n;\n"),
+        parse_sm("#NOTES:\n1234\n0000\nLFM0\n0000\n;\n", false),
         Some(vec![vec![
             Note {
                 pos: Pos { x: 0., y: 1. },
