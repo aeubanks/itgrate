@@ -9,13 +9,19 @@ struct Lines {
 }
 
 impl Lines {
-    fn new(s: &str) -> Self {
-        Self::with_verbosity(s, false)
-    }
-    fn with_verbosity(s: &str, verbose: bool) -> Self {
+    fn new(s: &str, verbose: bool) -> Self {
         Self {
             idx: 0,
-            lines: s.lines().map(|s| s.to_owned()).collect(),
+            lines: s
+                .lines()
+                .map(|s| {
+                    let mut s = s.to_owned();
+                    if let Some(p) = s.find("//") {
+                        s.truncate(p);
+                    }
+                    s.trim().to_owned()
+                })
+                .collect(),
             verbose,
         }
     }
@@ -62,17 +68,17 @@ impl Lines {
 
 #[test]
 fn test_lines() {
-    let mut lines1 = Lines::new("");
+    let mut lines1 = Lines::new("", false);
     assert_eq!(lines1.peek(), None);
     assert_eq!(lines1.consume(), None);
 
-    let mut lines2 = Lines::new("a");
+    let mut lines2 = Lines::new("a", false);
     assert_eq!(lines2.peek(), Some("a"));
     assert_eq!(lines2.consume(), Some("a"));
     assert_eq!(lines2.peek(), None);
     assert_eq!(lines2.consume(), None);
 
-    let mut lines3 = Lines::new("a\nbas\nqwe");
+    let mut lines3 = Lines::new("a\nbas\nqwe", false);
     assert_eq!(lines3.peek(), Some("a"));
     assert_eq!(lines3.consume(), Some("a"));
     assert_eq!(lines3.peek(), Some("bas"));
@@ -82,7 +88,7 @@ fn test_lines() {
     assert_eq!(lines3.peek(), None);
     assert_eq!(lines3.consume(), None);
 
-    let mut lines4 = Lines::new("a\n\n//\nb");
+    let mut lines4 = Lines::new("a\n\n//\nb", false);
     assert_eq!(lines4.peek(), Some("a"));
     assert_eq!(lines4.consume(), Some("a"));
     assert_eq!(lines4.peek(), Some("b"));
@@ -90,14 +96,22 @@ fn test_lines() {
     assert_eq!(lines4.peek(), None);
     assert_eq!(lines4.consume(), None);
 
-    let mut lines4 = Lines::new("\n\n//\n");
-    assert_eq!(lines4.peek(), None);
-    assert_eq!(lines4.consume(), None);
+    let mut lines5 = Lines::new("\n// hihihi\n // \n //\n// \n", false);
+    assert_eq!(lines5.peek(), None);
+    assert_eq!(lines5.consume(), None);
+
+    let mut lines6 = Lines::new("a //b\nc// d", false);
+    assert_eq!(lines6.peek(), Some("a"));
+    assert_eq!(lines6.consume(), Some("a"));
+    assert_eq!(lines6.peek(), Some("c"));
+    assert_eq!(lines6.consume(), Some("c"));
+    assert_eq!(lines6.peek(), None);
+    assert_eq!(lines6.consume(), None);
 }
 
 pub fn parse_sm(s: &str, verbose: bool) -> Option<Vec<Vec<Note>>> {
     let mut ret = Vec::new();
-    let mut lines = Lines::with_verbosity(s, verbose);
+    let mut lines = Lines::new(s, verbose);
 
     while let Some(l) = lines.consume() {
         if l == "#NOTES:" {
@@ -217,7 +231,10 @@ fn test_parse_sm() {
     );
 
     assert_eq!(
-        parse_sm("#NOTES:\n0000\n0000\n0100\n0000\n,\n0000\n0010\n0000\n0000\n;\n", false),
+        parse_sm(
+            "#NOTES:\n0000\n0000\n0100\n0000\n,\n0000\n0010\n0000\n0000\n;\n",
+            false
+        ),
         Some(vec![vec![
             Note {
                 pos: Pos { x: 1., y: 0. },
@@ -231,12 +248,18 @@ fn test_parse_sm() {
     );
 
     assert_eq!(
-        parse_sm("#NOTES:\n0000\n0000\n0000\n0000\n;\n\n#NOTES:\n0000\n;", false),
+        parse_sm(
+            "#NOTES:\n0000\n0000\n0000\n0000\n;\n\n#NOTES:\n0000\n;",
+            false
+        ),
         Some(vec![vec![], vec![]])
     );
 
     assert_eq!(
-        parse_sm("#NOTES:\n0000\n0000\n0000\n1000\n;\n\n#NOTES:\n1000\n;", false),
+        parse_sm(
+            "#NOTES:\n0000\n0000\n0000\n1000\n;\n\n#NOTES:\n1000\n;",
+            false
+        ),
         Some(vec![
             vec![Note {
                 pos: Pos { x: 0., y: 1. },
