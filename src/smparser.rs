@@ -54,7 +54,7 @@ impl Lines {
     }
     fn peek_result(&mut self) -> Result<&str> {
         self.peek()
-            .map_or_else(|| Err(anyhow!("peek_expect when empty")), |s| Ok(s))
+            .map_or_else(|| Err(anyhow!("peek_expect when empty")), Ok)
     }
     fn consume(&mut self) -> Option<&str> {
         self.skip_bad_lines();
@@ -71,7 +71,7 @@ impl Lines {
     }
     fn consume_result(&mut self) -> Result<&str> {
         self.consume()
-            .map_or_else(|| Err(anyhow!("consume_expect when empty")), |s| Ok(s))
+            .map_or_else(|| Err(anyhow!("consume_expect when empty")), Ok)
     }
 }
 
@@ -132,7 +132,7 @@ pub fn parse_sm(s: &str, verbose: bool) -> Result<Vec<Vec<Note>>> {
         if l == "#NOTES:" {
             loop {
                 let p = lines.peek_result()?;
-                if !p.ends_with(":") {
+                if !p.ends_with(':') {
                     break;
                 }
                 lines.consume();
