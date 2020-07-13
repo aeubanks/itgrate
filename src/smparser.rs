@@ -1,6 +1,6 @@
 use crate::note::Note;
 use crate::note_pos::col_to_pos;
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use std::option::Option;
 
 struct Lines {
@@ -124,10 +124,123 @@ fn test_lines() {
     assert_eq!(lines6.consume(), None);
 }
 
+struct BPMs {
+    // (beat, bpm)
+    bpm_changes: Vec<(f32, f32)>,
+    // TODO: stops?
+}
+
+impl BPMs {
+    fn interval_time(bpm: f32, beats: f32) -> f32 {
+        60. / bpm * beats
+    }
+
+    fn beat_to_time(&self, beat: f32) -> f32 {
+        // there's probably a faster way to do this
+        let mut last_change_beat = 0.;
+        let mut last_bpm = 1.;
+        let mut ret = 0.;
+        for bpm_change in &self.bpm_changes {
+            if beat <= bpm_change.0 {
+                break;
+            }
+            let beats_since_last_change = bpm_change.0 - last_change_beat;
+            ret += BPMs::interval_time(last_bpm, beats_since_last_change);
+            last_change_beat = bpm_change.0;
+            last_bpm = bpm_change.1;
+        }
+        ret += BPMs::interval_time(last_bpm, beat - last_change_beat);
+        ret
+    }
+
+    fn measure_to_time(&self, measure: f32) -> f32 {
+        self.beat_to_time(measure * 4.)
+    }
+}
+
+#[test]
+fn test_bpm_measure_to_time() {
+    {
+        let b = BPMs {
+            bpm_changes: vec![(0., 240.)],
+        };
+        assert_eq!(b.measure_to_time(0.), 0.);
+        assert_eq!(b.measure_to_time(0.5), 0.5);
+        assert_eq!(b.measure_to_time(1.), 1.);
+        assert_eq!(b.measure_to_time(10.), 10.);
+    }
+    {
+        let b = BPMs {
+            bpm_changes: vec![(0., 60.)],
+        };
+        assert_eq!(b.measure_to_time(0.), 0.);
+        assert_eq!(b.measure_to_time(0.5), 2.);
+        assert_eq!(b.measure_to_time(2.), 8.);
+    }
+    {
+        let b = BPMs {
+            bpm_changes: vec![(0., 60.), (4., 240.), (8., 60.)],
+        };
+        assert_eq!(b.measure_to_time(0.), 0.);
+        assert_eq!(b.measure_to_time(0.5), 2.);
+        assert_eq!(b.measure_to_time(1.), 4.);
+        assert_eq!(b.measure_to_time(1.5), 4.5);
+        assert_eq!(b.measure_to_time(2.), 5.);
+        assert_eq!(b.measure_to_time(2.5), 7.);
+    }
+}
+
 pub fn parse_sm(s: &str, verbose: bool) -> Result<Vec<Vec<Note>>> {
-    let mut ret = Vec::new();
     let mut lines = Lines::new(s, verbose);
 
+    let bpms = parse_bpm(&mut lines).context("finding #BPMS:")?;
+
+    parse_charts(&mut lines, &bpms)
+}
+
+fn parse_bpm(lines: &mut Lines) -> Result<BPMs> {
+    let mut bpms = Vec::new();
+
+    loop {
+        let l = lines.consume_result()?;
+        if !l.starts_with("#BPMS:") {
+            continue;
+        }
+        bpms.push(parse_bpm_line(&l[6..])?);
+        break;
+    }
+
+    loop {
+        let l = lines.consume_result()?;
+        if l == ";" {
+            break;
+        } else if !l.starts_with(',') {
+            return Err(anyhow!("unexpected #BPMS line: {}", l));
+        }
+        bpms.push(parse_bpm_line(&l[1..])?);
+    }
+
+    Ok(BPMs { bpm_changes: bpms })
+}
+
+fn parse_bpm_line(s: &str) -> Result<(f32, f32)> {
+    let equals = match s.find('=') {
+        Some(f) => f,
+        None => {
+            return Err(anyhow!("didn't find '=' in {}", s));
+        }
+    };
+    let time = s[..equals]
+        .parse::<f32>()
+        .with_context(|| format!("parsing BPM string: {}", s))?;
+    let bpm = s[(equals + 1)..]
+        .parse::<f32>()
+        .with_context(|| format!("parsing BPM string: {}", s))?;
+    Ok((time, bpm))
+}
+
+fn parse_charts(lines: &mut Lines, bpms: &BPMs) -> Result<Vec<Vec<Note>>> {
+    let mut ret = Vec::new();
     while let Some(l) = lines.consume() {
         if l == "#NOTES:" {
             loop {
@@ -137,13 +250,12 @@ pub fn parse_sm(s: &str, verbose: bool) -> Result<Vec<Vec<Note>>> {
                 }
                 lines.consume();
             }
-            let notes = parse_notes(&mut lines)?;
+            let notes = parse_chart(lines, bpms)?;
             ret.push(notes);
         } else if line_is_notes(l) {
             return Err(anyhow!("Unexpected notes while not in #NOTES section"));
         }
     }
-
     Ok(ret)
 }
 
@@ -154,19 +266,20 @@ fn line_is_notes(l: &str) -> bool {
     })
 }
 
-fn parse_measure(lines: &mut Lines, measure_count: i32) -> Result<Vec<Note>> {
+fn parse_measure(lines: &mut Lines, measure_count: i32, bpms: &BPMs) -> Result<Vec<Note>> {
     let mut ret = Vec::new();
-    let mut measure = Vec::new();
+    let mut measure_lines = Vec::new();
     loop {
         if !line_is_notes(lines.peek_result()?) {
             // Done with notes
             break;
         }
-        measure.push(lines.consume_result()?.to_owned());
+        measure_lines.push(lines.consume_result()?.to_owned());
     }
-    let measure_line_count = measure.len();
-    for (line_idx, l) in measure.iter().enumerate() {
-        let time = line_idx as f32 / measure_line_count as f32 + measure_count as f32;
+    let measure_line_count = measure_lines.len();
+    for (line_idx, l) in measure_lines.iter().enumerate() {
+        let measure = line_idx as f32 / measure_line_count as f32 + measure_count as f32;
+        let time = bpms.measure_to_time(measure);
         let num_cols = l.len();
         for (col, c) in l.chars().enumerate() {
             if c == '1' || c == '2' || c == '4' || c == 'L' {
@@ -180,14 +293,14 @@ fn parse_measure(lines: &mut Lines, measure_count: i32) -> Result<Vec<Note>> {
     Ok(ret)
 }
 
-fn parse_notes(lines: &mut Lines) -> Result<Vec<Note>> {
+fn parse_chart(lines: &mut Lines, bpms: &BPMs) -> Result<Vec<Note>> {
     let mut ret = Vec::new();
     let mut measure_count = 0;
     if !line_is_notes(lines.peek_result()?) {
         return Err(anyhow!("expected notes, got {:?}", lines.peek_result()));
     }
     while line_is_notes(lines.peek_result()?) {
-        let measure = parse_measure(lines, measure_count)?;
+        let measure = parse_measure(lines, measure_count, bpms)?;
         ret.extend(measure);
         let separator = lines.consume_result()?;
         if separator == ";" {
@@ -204,21 +317,56 @@ fn parse_notes(lines: &mut Lines) -> Result<Vec<Note>> {
 fn test_parse_sm() {
     use crate::note::Pos;
 
-    assert_eq!(parse_sm("", false).unwrap(), vec![] as Vec<Vec<Note>>);
+    assert!(parse_sm("", false).is_err());
 
-    assert!(parse_sm("#NOTES:\n", false).is_err());
+    assert!(parse_sm("#BPMS:0.0=240.0", false).is_err());
 
-    assert!(parse_sm("#NOTES:\n;\n", false).is_err());
+    assert!(parse_sm("#BPMS:0.0=240.0;", false).is_err());
 
-    assert!(parse_sm("#NOTES:\n0000\n0000\n0000\n0000\n", false).is_err());
+    assert!(parse_sm("#BPMS:0.0=240.0\n", false).is_err());
+
+    assert!(parse_sm("#BPMS:0.0240.0\n;", false).is_err());
 
     assert_eq!(
-        parse_sm("#NOTES:\n0000\n0000\n0000\n0000\n;\n", false).unwrap(),
+        parse_sm("#BPMS:0.0=240.0\n;", false).unwrap(),
+        vec![] as Vec<Vec<Note>>
+    );
+
+    assert_eq!(
+        parse_sm("#BPMS:0.0=240.0\n,10.0=250.0\n;", false).unwrap(),
+        vec![] as Vec<Vec<Note>>
+    );
+
+    assert_eq!(
+        parse_sm("#BPMS:0.0=240.0\n;\n", false).unwrap(),
+        vec![] as Vec<Vec<Note>>
+    );
+
+    assert!(parse_sm("#BPMS:0.0=240.0\n;\n#NOTES:\n", false).is_err());
+
+    assert!(parse_sm("#BPMS:0.0=240.0\n;\n#NOTES:\n;\n", false).is_err());
+
+    assert!(parse_sm(
+        "#BPMS:0.0=240.0\n;\n#NOTES:\n0000\n0000\n0000\n0000\n",
+        false
+    )
+    .is_err());
+
+    assert_eq!(
+        parse_sm(
+            "#BPMS:0.0=240.0\n;\n#NOTES:\n0000\n0000\n0000\n0000\n;\n",
+            false
+        )
+        .unwrap(),
         vec![vec![]]
     );
 
     assert_eq!(
-        parse_sm("#NOTES:\n1000\n0000\n0000\n0000\n;\n", false).unwrap(),
+        parse_sm(
+            "#BPMS:0.0=240.0\n;\n#NOTES:\n1000\n0000\n0000\n0000\n;\n",
+            false
+        )
+        .unwrap(),
         vec![vec![Note {
             pos: Pos { x: 0., y: 1. },
             time: 0.
@@ -226,7 +374,11 @@ fn test_parse_sm() {
     );
 
     assert_eq!(
-        parse_sm("#NOTES:\n0011\n0000\n0000\n0000\n;\n", false).unwrap(),
+        parse_sm(
+            "#BPMS:0.0=240.0\n;\n#NOTES:\n0011\n0000\n0000\n0000\n;\n",
+            false
+        )
+        .unwrap(),
         vec![vec![
             Note {
                 pos: Pos { x: 1., y: 2. },
@@ -240,7 +392,11 @@ fn test_parse_sm() {
     );
 
     assert_eq!(
-        parse_sm("#NOTES:\n0000\n0000\n0010\n0000\n;\n", false).unwrap(),
+        parse_sm(
+            "#BPMS:0.0=240.0\n;\n#NOTES:\n0000\n0000\n0010\n0000\n;\n",
+            false
+        )
+        .unwrap(),
         vec![vec![Note {
             pos: Pos { x: 1., y: 2. },
             time: 0.5
@@ -249,7 +405,7 @@ fn test_parse_sm() {
 
     assert_eq!(
         parse_sm(
-            "#NOTES:\n0000\n0000\n0100\n0000\n,\n0000\n0010\n0000\n0000\n;\n",
+            "#BPMS:0.0=240.0\n;\n#NOTES:\n0000\n0000\n0100\n0000\n,\n0000\n0010\n0000\n0000\n;\n",
             false
         )
         .unwrap(),
@@ -267,7 +423,7 @@ fn test_parse_sm() {
 
     assert_eq!(
         parse_sm(
-            "#NOTES:\n0000\n0000\n0000\n0000\n;\n\n#NOTES:\n0000\n;",
+            "#BPMS:0.0=240.0\n;\n#NOTES:\n0000\n0000\n0000\n0000\n;\n\n#NOTES:\n0000\n;",
             false
         )
         .unwrap(),
@@ -276,7 +432,7 @@ fn test_parse_sm() {
 
     assert_eq!(
         parse_sm(
-            "#NOTES:\n0000\n0000\n0000\n1000\n;\n\n#NOTES:\n1000\n;",
+            "#BPMS:0.0=240.0\n;\n#NOTES:\n0000\n0000\n0000\n1000\n;\n\n#NOTES:\n1000\n;",
             false
         )
         .unwrap(),
@@ -293,7 +449,11 @@ fn test_parse_sm() {
     );
 
     assert_eq!(
-        parse_sm("#NOTES:\n1234\n0000\nLFM0\n0000\n;\n", false).unwrap(),
+        parse_sm(
+            "#BPMS:0.0=240.0\n;\n#NOTES:\n1234\n0000\nLFM0\n0000\n;\n",
+            false
+        )
+        .unwrap(),
         vec![vec![
             Note {
                 pos: Pos { x: 0., y: 1. },
@@ -310,6 +470,32 @@ fn test_parse_sm() {
             Note {
                 pos: Pos { x: 0., y: 1. },
                 time: 0.5
+            }
+        ]]
+    );
+
+    assert_eq!(
+        parse_sm(
+            "#BPMS:0.0=240.0\n,2.0=60.0\n;\n#NOTES:\n1000\n1000\n1000\n1000\n;",
+            false
+        )
+        .unwrap(),
+        vec![vec![
+            Note {
+                pos: Pos { x: 0., y: 1. },
+                time: 0.
+            },
+            Note {
+                pos: Pos { x: 0., y: 1. },
+                time: 0.25
+            },
+            Note {
+                pos: Pos { x: 0., y: 1. },
+                time: 0.5
+            },
+            Note {
+                pos: Pos { x: 0., y: 1. },
+                time: 1.5
             }
         ]]
     );
