@@ -1,3 +1,4 @@
+use anyhow::Result;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -15,10 +16,10 @@ struct Opts {
     verbose: bool,
 }
 
-fn main() -> std::io::Result<()> {
+fn main() -> Result<()> {
     let opts = Opts::from_args();
     let s = std::fs::read_to_string(opts.input)?;
-    let notes = smparser::parse_sm(&s, opts.verbose);
+    let notes = smparser::parse_sm(&s, opts.verbose)?;
     println!("{:?}", notes);
     Ok(())
 }
