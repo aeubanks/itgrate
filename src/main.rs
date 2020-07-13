@@ -1,10 +1,12 @@
 use anyhow::Result;
 use std::path::PathBuf;
 use structopt::StructOpt;
+use rate::rate_notes;
 
 mod note;
 mod note_pos;
 mod smparser;
+mod rate;
 
 #[derive(Debug, StructOpt)]
 #[structopt()]
@@ -20,6 +22,9 @@ fn main() -> Result<()> {
     let opts = Opts::from_args();
     let s = std::fs::read_to_string(opts.input)?;
     let notes = smparser::parse_sm(&s, opts.verbose)?;
-    println!("{:?}", notes);
+    let ratings = notes.iter().map(|n| rate_notes(n));
+    for r in ratings {
+        println!("{}", r);
+    }
     Ok(())
 }
