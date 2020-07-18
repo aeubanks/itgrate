@@ -47,6 +47,11 @@ impl State {
 
 impl State {
     pub fn step(&self, foot: Foot, note: Note) -> State {
+        for foot in &self.feet {
+            if let Some(last) = foot.last_hit {
+                assert!(last.time <= note.time, "stepping an earlier note!");
+            }
+        }
         let mut copy = *self;
 
         let mut foot = copy.feet[foot as usize];
