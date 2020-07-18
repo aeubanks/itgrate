@@ -373,26 +373,80 @@ pub fn rate_notes(notes: &[Note]) -> f32 {
     convert_raw_rating(raw_rating)
 }
 
-#[test]
-fn sanity() {
-    // [rate_notes(0 notes), rate_notes(1 note), ...]
-    let ratings = (0..10)
-        .map(|i| {
-            (0..i)
-                .map(|n| Note {
-                    pos: crate::note::Pos {
-                        x: n as f32,
-                        y: (n + 1) as f32,
-                    },
-                    time: n as f32,
-                })
-                .collect::<Vec<Note>>()
-        })
-        .map(|notes| rate_notes(&notes))
-        .collect::<Vec<f32>>();
-    assert_eq!(ratings[0], 0.);
-    for w in ratings.windows(2) {
-        // Ratings should increase with more notes
-        assert!(w[0] < w[1]);
+#[cfg(test)]
+mod e2e {
+    use super::*;
+    use crate::note::Pos;
+
+    #[test]
+    fn empty() {
+        assert_eq!(rate_notes(&[]), 0.);
     }
+
+    #[test]
+    fn faster_is_harder() {
+        // [rate_notes(50 notes 1s apart), rate_notes(50 notes 0.5s apart), ...]
+        let ratings = (1..10)
+            .map(|i| {
+                (0..50)
+                    .map(|n| Note {
+                        pos: Pos {
+                            x: (n as f32 / 4.0).fract(),
+                            y: (n as f32 / 5.0).fract(),
+                        },
+                        time: n as f32 / i as f32,
+                    })
+                    .collect::<Vec<Note>>()
+            })
+            .map(|notes| rate_notes(&notes))
+            .collect::<Vec<f32>>();
+        for w in ratings.windows(2) {
+            // Ratings should increase with faster notes
+            assert!(w[0] < w[1]);
+        }
+    }
+
+    #[test]
+    fn more_is_harder() {
+        // [rate_notes(0 notes), rate_notes(1 note), ...]
+        let ratings = (0..10)
+            .map(|i| {
+                (0..i)
+                    .map(|n| Note {
+                        pos: Pos {
+                            x: n as f32,
+                            y: (n + 1) as f32,
+                        },
+                        time: n as f32,
+                    })
+                    .collect::<Vec<Note>>()
+            })
+            .map(|notes| rate_notes(&notes))
+            .collect::<Vec<f32>>();
+        for w in ratings.windows(2) {
+            // Ratings should increase with more notes
+            assert!(w[0] < w[1]);
+        }
+    }
+
+    #[test]
+    #[ignore = "doesn't pass yet"]
+    fn one_note_after_break_doesnt_affect_difficulty() {
+        let mut notes = (0..100)
+            .map(|n| Note {
+                pos: Pos::default(),
+                time: n as f32 / 10.,
+            })
+            .collect::<Vec<Note>>();
+        let r1 = rate_notes(&notes);
+        notes.push(Note {
+            pos: Pos::default(),
+            time: 100.,
+        });
+        let r2 = rate_notes(&notes);
+        assert_eq!(r1, r2);
+    }
+
+    // tests to add:
+    //  moving foot farther is harder
 }
