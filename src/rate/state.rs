@@ -54,7 +54,7 @@ impl State {
         }
         let mut copy = *self;
 
-        let mut foot = copy.feet[foot as usize];
+        let mut foot = &mut copy.feet[foot as usize];
         foot.fatigue += 0.5;
         foot.last_hit = Some(note);
         copy.fatigue += 0.5;
@@ -70,21 +70,27 @@ impl State {
 fn test_state_step() {
     use crate::note::Pos;
     {
+        let note1 = Note {
+            pos: Pos { x: 0., y: 0. },
+            time: 0.0,
+        };
+        let note2 = Note {
+            pos: Pos { x: 0., y: 0. },
+            time: 0.1,
+        };
         let mut s = State::new();
-        s = s.step(
-            Foot::Left,
-            Note {
-                pos: Pos { x: 0., y: 0. },
-                time: 0.0,
-            },
-        );
-        s = s.step(
-            Foot::Right,
-            Note {
-                pos: Pos { x: 0., y: 0. },
-                time: 0.0,
-            },
-        );
+        s = s.step(Foot::Left, note1);
+        assert_eq!(s.feet[Foot::Left as usize].fatigue, 0.5);
+        assert_eq!(s.feet[Foot::Left as usize].last_hit, Some(note1));
+        assert_eq!(s.feet[Foot::Right as usize].fatigue, 0.);
+        assert_eq!(s.feet[Foot::Right as usize].last_hit, None);
+        assert_eq!(s.fatigue, 0.5);
+
+        s = s.step(Foot::Right, note2);
+        assert_eq!(s.feet[Foot::Left as usize].fatigue, 0.5);
+        assert_eq!(s.feet[Foot::Left as usize].last_hit, Some(note1));
+        assert_eq!(s.feet[Foot::Right as usize].fatigue, 0.5);
+        assert_eq!(s.feet[Foot::Right as usize].last_hit, Some(note2));
         assert_eq!(s.fatigue, 1.);
     }
 }
