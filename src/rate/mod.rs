@@ -332,6 +332,11 @@ fn test_remove_all_descendents() {
     }
 }
 
+/// Convert a raw rating to a more presentable rating.
+fn convert_raw_rating(r: f32) -> f32 {
+    r / 100.
+}
+
 /// Rates a sequence of notes.
 /// The notes should be in order time-wise.
 pub fn rate_notes(notes: &[Note]) -> f32 {
@@ -358,12 +363,14 @@ pub fn rate_notes(notes: &[Note]) -> f32 {
         .collect::<Vec<Note>>();
     let last_descendents = create_descendents(&mut dag, &last_notes, &cur_layer);
 
-    last_descendents
+    let raw_rating = last_descendents
         .iter()
         .map(|n| r32(dag[*n].max_fatigue()))
         .min()
         .unwrap_or(r32(0.))
-        .raw()
+        .raw();
+
+    convert_raw_rating(raw_rating)
 }
 
 #[test]

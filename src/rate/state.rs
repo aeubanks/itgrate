@@ -29,6 +29,15 @@ impl State {
 }
 
 impl State {
+    const FATIGUE_PER_STEP: f32 = 0.5;
+    const FATIGUE_DECAY_RATE: f32 = 0.1;
+    const FOOT_TO_BODY_FATIGUE_RATIO: f32 = 0.1;
+
+    fn fatigue_after_rest_and_step(prev_fatigue: f32, rest_time: f32) -> f32 {
+        // Recover from fatigue exponentially, and add a constant fatigue per step.
+        prev_fatigue * (-rest_time * State::FATIGUE_DECAY_RATE).exp() + State::FATIGUE_PER_STEP
+    }
+
     pub fn step(&self, foot: Foot, note: Note) -> State {
         for foot in &self.feet {
             if let Some(last) = foot.last_hit {
@@ -38,9 +47,13 @@ impl State {
         let mut copy = *self;
 
         let mut foot = &mut copy.feet[foot as usize];
-        foot.fatigue += 0.5;
+        foot.fatigue = State::fatigue_after_rest_and_step(
+            foot.fatigue,
+            foot.last_hit.map_or(0., |lh| note.time - lh.time),
+        );
         foot.last_hit = Some(note);
-        copy.fatigue += 0.5;
+        // Add the foot's fatigue (scaled by some factor) to overall fatigue.
+        copy.fatigue += foot.fatigue * State::FOOT_TO_BODY_FATIGUE_RATIO;
         copy.max_fatigue = self.max_fatigue.max(copy.fatigue);
         copy
     }
@@ -68,15 +81,12 @@ fn test_state_step() {
         assert_eq!(s.feet[Foot::Left as usize].last_hit, Some(note1));
         assert_eq!(s.feet[Foot::Right as usize].fatigue, 0.);
         assert_eq!(s.feet[Foot::Right as usize].last_hit, None);
-        assert_eq!(s.fatigue, 0.5);
-        assert_eq!(s.max_fatigue, 0.5);
+        assert_eq!(s.max_fatigue, s.fatigue);
 
         s = s.step(Foot::Right, note2);
         assert_eq!(s.feet[Foot::Left as usize].fatigue, 0.5);
         assert_eq!(s.feet[Foot::Left as usize].last_hit, Some(note1));
         assert_eq!(s.feet[Foot::Right as usize].fatigue, 0.5);
         assert_eq!(s.feet[Foot::Right as usize].last_hit, Some(note2));
-        assert_eq!(s.fatigue, 1.);
-        assert_eq!(s.max_fatigue, 1.);
     }
 }
