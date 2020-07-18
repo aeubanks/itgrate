@@ -12,19 +12,20 @@ pub enum Foot {
     Right = 1,
 }
 
-impl Foot {
-    pub fn other_foot(&self) -> Foot {
-        match self {
-            Foot::Left => Foot::Right,
-            Foot::Right => Foot::Left,
-        }
-    }
-}
-
 #[derive(Debug, PartialEq, Copy, Clone, Default)]
 pub struct State {
     feet: [FootStatus; 2],
     fatigue: f32,
+    max_fatigue: f32,
+}
+
+#[cfg(test)]
+impl State {
+    pub fn with_max_fatigue(mf: f32) -> Self {
+        let mut ret = Self::default();
+        ret.max_fatigue = mf;
+        ret
+    }
 }
 
 impl State {
@@ -40,11 +41,12 @@ impl State {
         foot.fatigue += 0.5;
         foot.last_hit = Some(note);
         copy.fatigue += 0.5;
+        copy.max_fatigue = self.max_fatigue.max(copy.fatigue);
         copy
     }
 
-    pub fn fatigue(&self) -> f32 {
-        self.fatigue
+    pub fn max_fatigue(&self) -> f32 {
+        self.max_fatigue
     }
 }
 
@@ -67,6 +69,7 @@ fn test_state_step() {
         assert_eq!(s.feet[Foot::Right as usize].fatigue, 0.);
         assert_eq!(s.feet[Foot::Right as usize].last_hit, None);
         assert_eq!(s.fatigue, 0.5);
+        assert_eq!(s.max_fatigue, 0.5);
 
         s = s.step(Foot::Right, note2);
         assert_eq!(s.feet[Foot::Left as usize].fatigue, 0.5);
@@ -74,5 +77,6 @@ fn test_state_step() {
         assert_eq!(s.feet[Foot::Right as usize].fatigue, 0.5);
         assert_eq!(s.feet[Foot::Right as usize].last_hit, Some(note2));
         assert_eq!(s.fatigue, 1.);
+        assert_eq!(s.max_fatigue, 1.);
     }
 }
