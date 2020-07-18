@@ -1,18 +1,9 @@
 use crate::note::Note;
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Copy, Clone, Default)]
 pub struct FootStatus {
     last_hit: Option<Note>,
     fatigue: f32,
-}
-
-impl FootStatus {
-    fn new() -> Self {
-        Self {
-            last_hit: None,
-            fatigue: 0.,
-        }
-    }
 }
 
 #[derive(Copy, Clone)]
@@ -30,19 +21,10 @@ impl Foot {
     }
 }
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Copy, Clone, Default)]
 pub struct State {
     feet: [FootStatus; 2],
     fatigue: f32,
-}
-
-impl State {
-    pub fn new() -> Self {
-        Self {
-            feet: [FootStatus::new(); 2],
-            fatigue: 0.,
-        }
-    }
 }
 
 impl State {
@@ -78,7 +60,7 @@ fn test_state_step() {
             pos: Pos { x: 0., y: 0. },
             time: 0.1,
         };
-        let mut s = State::new();
+        let mut s = State::default();
         s = s.step(Foot::Left, note1);
         assert_eq!(s.feet[Foot::Left as usize].fatigue, 0.5);
         assert_eq!(s.feet[Foot::Left as usize].last_hit, Some(note1));
