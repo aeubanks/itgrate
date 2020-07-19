@@ -430,6 +430,60 @@ mod e2e {
     }
 
     #[test]
+    fn farther_is_harder() {
+        let notes1 = (0..100)
+            .flat_map(|n| {
+                vec![
+                    Note {
+                        pos: Pos { x: 0., y: 0. },
+                        time: n as f32,
+                    },
+                    Note {
+                        pos: Pos { x: 1., y: 0. },
+                        time: n as f32,
+                    },
+                    Note {
+                        pos: Pos { x: 0., y: 1. },
+                        time: n as f32,
+                    },
+                    Note {
+                        pos: Pos { x: 1., y: 1. },
+                        time: n as f32,
+                    },
+                ]
+            })
+            .map(|n| n)
+            .collect::<Vec<Note>>();
+        let notes2 = (0..100)
+            .flat_map(|n| {
+                vec![
+                    Note {
+                        pos: Pos { x: 0., y: 0. },
+                        time: n as f32,
+                    },
+                    Note {
+                        pos: Pos { x: 1., y: 0. },
+                        time: n as f32,
+                    },
+                    Note {
+                        pos: Pos { x: 0., y: 2. },
+                        time: n as f32,
+                    },
+                    Note {
+                        pos: Pos { x: 1., y: 2. },
+                        time: n as f32,
+                    },
+                ]
+            })
+            .map(|n| n)
+            .collect::<Vec<Note>>();
+
+        let r1 = rate_notes(&notes1);
+        let r2 = rate_notes(&notes2);
+        assert!(r1 < r2);
+    }
+
+    #[test]
     #[ignore = "doesn't pass yet"]
     fn one_note_after_break_doesnt_affect_difficulty() {
         let mut notes = (0..100)
@@ -446,7 +500,4 @@ mod e2e {
         let r2 = rate_notes(&notes);
         assert_eq!(r1, r2);
     }
-
-    // tests to add:
-    //  moving foot farther is harder
 }

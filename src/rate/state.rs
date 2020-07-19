@@ -29,13 +29,16 @@ impl State {
 }
 
 impl State {
-    const FATIGUE_PER_STEP: f32 = 0.5;
+    const FATIGUE_PER_STEP: f32 = 1.;
+    const FATIGUE_DIST_RATIO: f32 = 0.01;
     const FATIGUE_DECAY_RATE: f32 = 0.1;
     const FOOT_TO_BODY_FATIGUE_RATIO: f32 = 0.1;
 
-    fn fatigue_after_rest_and_step(prev_fatigue: f32, rest_time: f32) -> f32 {
+    fn fatigue_after_rest_and_step(prev_fatigue: f32, rest_time: f32, distance: f32) -> f32 {
         // Recover from fatigue exponentially, and add a constant fatigue per step.
-        prev_fatigue * (-rest_time * State::FATIGUE_DECAY_RATE).exp() + State::FATIGUE_PER_STEP
+        prev_fatigue * (-rest_time * State::FATIGUE_DECAY_RATE).exp()
+            + distance / (rest_time + 1.) * State::FATIGUE_DIST_RATIO
+            + State::FATIGUE_PER_STEP
     }
 
     pub fn step(&self, foot: Foot, note: Note) -> State {
@@ -50,6 +53,7 @@ impl State {
         foot.fatigue = State::fatigue_after_rest_and_step(
             foot.fatigue,
             foot.last_hit.map_or(0., |lh| note.time - lh.time),
+            foot.last_hit.map_or(0., |lh| note.pos.distance(&lh.pos)),
         );
         foot.last_hit = Some(note);
         // Add the foot's fatigue (scaled by some factor) to overall fatigue.
@@ -77,16 +81,16 @@ fn test_state_step() {
         };
         let mut s = State::default();
         s = s.step(Foot::Left, note1);
-        assert_eq!(s.feet[Foot::Left as usize].fatigue, 0.5);
+        assert_ne!(s.feet[Foot::Left as usize].fatigue, 0.);
         assert_eq!(s.feet[Foot::Left as usize].last_hit, Some(note1));
         assert_eq!(s.feet[Foot::Right as usize].fatigue, 0.);
         assert_eq!(s.feet[Foot::Right as usize].last_hit, None);
         assert_eq!(s.max_fatigue, s.fatigue);
 
         s = s.step(Foot::Right, note2);
-        assert_eq!(s.feet[Foot::Left as usize].fatigue, 0.5);
+        assert_ne!(s.feet[Foot::Left as usize].fatigue, 0.);
         assert_eq!(s.feet[Foot::Left as usize].last_hit, Some(note1));
-        assert_eq!(s.feet[Foot::Right as usize].fatigue, 0.5);
+        assert_ne!(s.feet[Foot::Right as usize].fatigue, 0.);
         assert_eq!(s.feet[Foot::Right as usize].last_hit, Some(note2));
     }
 }
