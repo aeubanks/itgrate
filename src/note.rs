@@ -16,7 +16,7 @@ impl Pos {
 fn test_pos_distance() {
     let p1 = Pos { x: 1., y: 8. };
     let p2 = Pos { x: 4., y: 4. };
-    assert!(p1.distance(&p2) - 5. < std::f32::EPSILON);
+    assert!(p1.distance(&p2) - 5. < f32::EPSILON);
 }
 
 #[derive(Debug, PartialEq, Copy, Clone, Default)]
