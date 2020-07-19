@@ -1,12 +1,12 @@
-use anyhow::Result;
-use rate::rate_notes;
-use std::path::PathBuf;
-use structopt::StructOpt;
-
 mod note;
 mod note_pos;
 mod rate;
 mod smparser;
+
+use anyhow::Result;
+use rate::rate_notes;
+use std::path::PathBuf;
+use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 #[structopt()]
