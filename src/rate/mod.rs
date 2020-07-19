@@ -484,7 +484,6 @@ mod e2e {
     }
 
     #[test]
-    #[ignore = "doesn't pass yet"]
     fn one_note_after_break_doesnt_affect_difficulty() {
         let mut notes = (0..100)
             .map(|n| Note {
