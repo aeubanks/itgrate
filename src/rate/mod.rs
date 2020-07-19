@@ -239,7 +239,7 @@ fn find_best_nodes(
     for d in deepest_descendents {
         heap.push(NodeContentPair {
             node: *d,
-            fatigue: r32(dag[*d].max_fatigue()),
+            fatigue: r32(dag[*d].fatigue()),
         });
     }
 
@@ -262,16 +262,16 @@ fn find_best_nodes(
 fn test_find_best_nodes() {
     let mut dag = Dag::new();
     let root = dag.add_node(State::default());
-    let (_, a) = dag.add_child(root, (), State::with_max_fatigue(1.));
-    let (_, b) = dag.add_child(root, (), State::with_max_fatigue(2.));
-    let (_, c) = dag.add_child(a, (), State::with_max_fatigue(3.));
-    let (_, d) = dag.add_child(a, (), State::with_max_fatigue(4.));
-    let (_, e) = dag.add_child(a, (), State::with_max_fatigue(5.));
-    let (_, f) = dag.add_child(b, (), State::with_max_fatigue(6.));
-    let (_, g) = dag.add_child(b, (), State::with_max_fatigue(7.));
-    let (_, h) = dag.add_child(c, (), State::with_max_fatigue(8.));
-    let (_, i) = dag.add_child(d, (), State::with_max_fatigue(9.));
-    let (_, j) = dag.add_child(e, (), State::with_max_fatigue(10.));
+    let (_, a) = dag.add_child(root, (), State::with_fatigue(1.));
+    let (_, b) = dag.add_child(root, (), State::with_fatigue(2.));
+    let (_, c) = dag.add_child(a, (), State::with_fatigue(3.));
+    let (_, d) = dag.add_child(a, (), State::with_fatigue(4.));
+    let (_, e) = dag.add_child(a, (), State::with_fatigue(5.));
+    let (_, f) = dag.add_child(b, (), State::with_fatigue(6.));
+    let (_, g) = dag.add_child(b, (), State::with_fatigue(7.));
+    let (_, h) = dag.add_child(c, (), State::with_fatigue(8.));
+    let (_, i) = dag.add_child(d, (), State::with_fatigue(9.));
+    let (_, j) = dag.add_child(e, (), State::with_fatigue(10.));
 
     assert_eq!(find_best_nodes(&dag, &[a, b], 1, 0), []);
     assert_eq!(find_best_nodes(&dag, &[a, b], 1, 1), [root]);

@@ -21,9 +21,9 @@ pub struct State {
 
 #[cfg(test)]
 impl State {
-    pub fn with_max_fatigue(mf: f32) -> Self {
+    pub fn with_fatigue(f: f32) -> Self {
         let mut ret = Self::default();
-        ret.max_fatigue = mf;
+        ret.fatigue = f;
         ret
     }
 }
@@ -64,6 +64,10 @@ impl State {
 
     pub fn max_fatigue(&self) -> f32 {
         self.max_fatigue
+    }
+
+    pub fn fatigue(&self) -> f32 {
+        self.fatigue
     }
 }
 
