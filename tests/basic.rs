@@ -42,7 +42,7 @@ fn more_is_harder() {
                     x: (f / 4.0).fract(),
                     y: (f / 5.0).fract(),
                 },
-                |n| n,
+                |n| n / 10.,
             )
         })
         .map(|notes| rate_notes(&notes))

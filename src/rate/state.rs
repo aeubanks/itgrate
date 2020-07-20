@@ -7,9 +7,10 @@ pub struct FootStatus {
 }
 
 impl FootStatus {
-    const FATIGUE_PER_STEP: f32 = 2.;
+    const BASE_FATIGUE_PER_STEP: f32 = 2.;
+    const FATIGUE_PER_STEP_RATIO: f32 = 30.;
     const FATIGUE_DIST_RATIO: f32 = 0.1;
-    const FATIGUE_DECAY_RATE: f32 = 0.05;
+    const FATIGUE_DECAY_RATE: f32 = 0.01;
 
     fn fatigue_after_rest(prev_fatigue: f32, rest_time: f32) -> f32 {
         prev_fatigue * (-rest_time * FootStatus::FATIGUE_DECAY_RATE).exp()
@@ -19,8 +20,9 @@ impl FootStatus {
         // Recover from fatigue exponentially.
         // Add fatigue based on rest time and distance.
         FootStatus::fatigue_after_rest(last_fatigue, rest_time)
-            + (FootStatus::FATIGUE_PER_STEP + distance * FootStatus::FATIGUE_DIST_RATIO)
-                / (1. + rest_time)
+            + FootStatus::FATIGUE_PER_STEP_RATIO
+                * (FootStatus::BASE_FATIGUE_PER_STEP + distance * FootStatus::FATIGUE_DIST_RATIO)
+                / (0.007 + rest_time)
     }
 
     fn step(&mut self, note: &Note) {

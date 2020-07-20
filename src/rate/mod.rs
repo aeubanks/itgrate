@@ -334,7 +334,7 @@ fn test_remove_all_descendents() {
 
 /// Convert a raw rating to a more presentable rating.
 fn convert_fatigue_to_rating(r: f32) -> f32 {
-    r / 100.
+    r / 10000.
 }
 
 pub fn rating_dag(notes: &[Note]) -> Option<(Dag, NodeIndex)> {
