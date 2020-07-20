@@ -333,13 +333,15 @@ fn test_remove_all_descendents() {
 }
 
 /// Convert a raw rating to a more presentable rating.
-fn convert_raw_rating(r: f32) -> f32 {
+fn convert_fatigue_to_rating(r: f32) -> f32 {
     r / 100.
 }
 
-/// Rates a sequence of notes.
-/// The notes should be in order time-wise.
-pub fn rate_notes(notes: &[Note]) -> f32 {
+pub fn rating_dag(notes: &[Note]) -> Option<(Dag, NodeIndex)> {
+    if notes.is_empty() {
+        return None;
+    }
+
     let mut dag = Dag::new();
     let root = dag.add_node(State::default());
     let mut cur_layer = vec![root];
@@ -363,12 +365,35 @@ pub fn rate_notes(notes: &[Note]) -> f32 {
         .collect::<Vec<Note>>();
     let last_descendents = create_descendents(&mut dag, &last_notes, &cur_layer);
 
-    let raw_rating = last_descendents
+    let best_ending_node = last_descendents
         .iter()
-        .map(|n| r32(dag[*n].max_fatigue()))
-        .min()
-        .unwrap_or(r32(0.))
-        .raw();
+        .map(|n| NodeContentPair {
+            node: *n,
+            fatigue: r32(dag[*n].fatigue()),
+        })
+        .max()
+        .unwrap()
+        .node;
 
-    convert_raw_rating(raw_rating)
+    Some((dag, best_ending_node))
+}
+
+pub fn ratings_at_notes(notes: &[Note]) -> Vec<f32> {
+    rating_dag(notes).map_or(Vec::new(), |(dag, best_ending_node)| {
+        let mut walk = dag
+            .recursive_walk(best_ending_node, |g, n| g.parents(n).walk_next(g))
+            .iter(&dag)
+            .map(|(_, n)| dag[n].fatigue())
+            .collect::<Vec<f32>>();
+        walk.reverse();
+        walk
+    })
+}
+
+/// Rates a sequence of notes.
+/// The notes should be in order time-wise.
+pub fn rate_notes(notes: &[Note]) -> f32 {
+    rating_dag(notes).map_or(0., |(dag, best_ending_node)| {
+        convert_fatigue_to_rating(dag[best_ending_node].max_fatigue())
+    })
 }

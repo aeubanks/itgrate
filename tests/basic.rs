@@ -2,7 +2,7 @@ mod common;
 
 use common::create_notes;
 use itgrate::note::{Note, Pos};
-use itgrate::rate::rate_notes;
+use itgrate::rate::{rate_notes, ratings_at_notes};
 
 #[test]
 fn empty() {
@@ -117,4 +117,20 @@ fn one_note_after_break_doesnt_affect_difficulty() {
     });
     let r2 = rate_notes(&notes);
     assert_eq!(r1, r2);
+}
+
+#[test]
+fn rating_at_notes_same_len_as_notes() {
+    let notes = create_notes(100, |_| Pos::default(), |f| f / 10.);
+    let ratings = ratings_at_notes(&notes);
+    assert_eq!(notes.len(), ratings.len());
+}
+
+#[test]
+fn fatigue_keeps_increasing_in_unbroken_stream() {
+    let notes = create_notes(100, |_| Pos::default(), |f| f / 10.);
+    let ratings = ratings_at_notes(&notes);
+    for w in ratings.windows(2) {
+        assert!(w[0] < w[1], "{} {}", w[0], w[1]);
+    }
 }
