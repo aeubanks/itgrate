@@ -378,7 +378,7 @@ pub fn rating_dag(notes: &[Note]) -> Option<(Dag, NodeIndex)> {
     Some((dag, best_ending_node))
 }
 
-pub fn ratings_at_notes(notes: &[Note]) -> Vec<f32> {
+pub fn fatigues_at_notes(notes: &[Note]) -> Vec<f32> {
     rating_dag(notes).map_or(Vec::new(), |(dag, best_ending_node)| {
         let mut walk = dag
             .recursive_walk(best_ending_node, |g, n| g.parents(n).walk_next(g))
