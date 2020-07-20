@@ -12,7 +12,7 @@ use structopt::StructOpt;
 #[structopt()]
 struct Opts {
     #[structopt(parse(from_os_str))]
-    input: PathBuf,
+    inputs: Vec<PathBuf>,
 
     #[structopt(short = "v")]
     verbose: bool,
@@ -20,12 +20,14 @@ struct Opts {
 
 fn main() -> Result<()> {
     let opts = Opts::from_args();
-    let s = std::fs::read_to_string(opts.input)?;
-    let smresult = smparser::parse_sm(&s, opts.verbose)?;
-    println!("{}", smresult.title);
-    let ratings = smresult.charts.iter().map(|n| rate_notes(&n.1));
-    for r in ratings {
-        println!("{}", r);
+    for input in opts.inputs {
+        let s = std::fs::read_to_string(input)?;
+        let smresult = smparser::parse_sm(&s, opts.verbose)?;
+        for (difficulty, notes) in smresult.charts {
+            println!("{} {}", smresult.title, difficulty);
+            let rating = rate_notes(&notes);
+            println!("{}", rating);
+        }
     }
     Ok(())
 }
