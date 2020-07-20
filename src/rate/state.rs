@@ -30,13 +30,13 @@ impl State {
 impl State {
     const FATIGUE_PER_STEP: f32 = 1.;
     const FATIGUE_DIST_RATIO: f32 = 0.01;
-    const FATIGUE_DECAY_RATE: f32 = 0.1;
+    const FATIGUE_DECAY_RATE: f32 = 0.01;
 
     fn fatigue_after_rest_and_step(prev_fatigue: f32, rest_time: f32, distance: f32) -> f32 {
         // Recover from fatigue exponentially, and add a constant fatigue per step.
         prev_fatigue * (-rest_time * State::FATIGUE_DECAY_RATE).exp()
-            + distance / (rest_time + 1.) * State::FATIGUE_DIST_RATIO
-            + State::FATIGUE_PER_STEP
+            + distance / (1. + rest_time) * State::FATIGUE_DIST_RATIO
+            + State::FATIGUE_PER_STEP / (1. + rest_time)
     }
 
     pub fn step(&self, foot: Foot, note: Note) -> State {
