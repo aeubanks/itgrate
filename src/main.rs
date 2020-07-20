@@ -23,7 +23,7 @@ fn main() -> Result<()> {
     let s = std::fs::read_to_string(opts.input)?;
     let smresult = smparser::parse_sm(&s, opts.verbose)?;
     println!("{}", smresult.title);
-    let ratings = smresult.charts.iter().map(|n| rate_notes(n));
+    let ratings = smresult.charts.iter().map(|n| rate_notes(&n.1));
     for r in ratings {
         println!("{}", r);
     }
