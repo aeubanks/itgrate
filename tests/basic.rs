@@ -65,7 +65,7 @@ fn faster_is_harder() {
         .collect::<Vec<f32>>();
     for w in ratings.windows(2) {
         // Ratings should increase with faster notes
-        assert!(w[0] < w[1]);
+        assert!(w[0] < w[1], "{} {}", w[0], w[1]);
     }
 }
 
@@ -87,7 +87,7 @@ fn more_is_harder() {
         .collect::<Vec<f32>>();
     for w in ratings.windows(2) {
         // Ratings should increase with more notes
-        assert!(w[0] < w[1]);
+        assert!(w[0] < w[1], "{} {}", w[0], w[1]);
     }
 }
 
