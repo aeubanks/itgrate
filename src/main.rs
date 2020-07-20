@@ -21,8 +21,9 @@ struct Opts {
 fn main() -> Result<()> {
     let opts = Opts::from_args();
     let s = std::fs::read_to_string(opts.input)?;
-    let notes = smparser::parse_sm(&s, opts.verbose)?;
-    let ratings = notes.iter().map(|n| rate_notes(n));
+    let smresult = smparser::parse_sm(&s, opts.verbose)?;
+    println!("{}", smresult.title);
+    let ratings = smresult.charts.iter().map(|n| rate_notes(n));
     for r in ratings {
         println!("{}", r);
     }
