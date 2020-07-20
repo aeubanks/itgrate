@@ -156,7 +156,7 @@ fn create_descendents(dag: &mut Dag, notes: &[Note], cur_layer: &[NodeIndex]) ->
         for node in processing_nodes {
             let cur_state = dag[node];
             for foot in &[Foot::Left, Foot::Right] {
-                let next_state = cur_state.step(*foot, *note);
+                let next_state = cur_state.step(*foot, note);
                 let (_, new_node) = dag.add_child(node, (), next_state);
                 next_processing_nodes.push(new_node);
             }
@@ -214,8 +214,8 @@ fn test_create_descendents() {
         let mut l = State::default();
         let mut r = State::default();
         for n in &notes {
-            l = l.step(Foot::Left, *n);
-            r = r.step(Foot::Right, *n);
+            l = l.step(Foot::Left, n);
+            r = r.step(Foot::Right, n);
         }
         assert!(descendents(&dag, a).iter().any(|n| dag[*n] == l));
         assert!(descendents(&dag, a).iter().any(|n| dag[*n] == r));
