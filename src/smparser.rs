@@ -192,7 +192,10 @@ fn test_bpm_measure_to_time() {
 
 #[derive(Debug, PartialEq)]
 pub struct SMChart {
+    pub mode: String,
+    pub author: String,
     pub difficulty: String,
+    pub level: i32,
     pub notes: Vec<Note>,
 }
 
@@ -271,30 +274,34 @@ fn parse_charts(lines: &mut Lines, bpms: &BPMs) -> Result<Vec<SMChart>> {
     let mut ret = Vec::new();
     while let Some(l) = lines.consume() {
         if l == "#NOTES:" {
-            // mode
-            if !lines.consume_result()?.ends_with(':') {
+            let mut mode = lines.consume_result()?.to_owned();
+            if mode.pop() != Some(':') {
                 return Err(anyhow!("mode doesn't end in ':'"));
             }
-            // author
-            if !lines.consume_result()?.ends_with(':') {
+            let mut author = lines.consume_result()?.to_owned();
+            if author.pop() != Some(':') {
                 return Err(anyhow!("author doesn't end in ':'"));
             }
             let mut difficulty = lines.consume_result()?.to_owned();
-            // difficulty
-            if !difficulty.ends_with(':') {
+            if difficulty.pop() != Some(':') {
                 return Err(anyhow!("difficulty doesn't end in ':'"));
             }
-            difficulty.pop();
-            // level
-            if !lines.consume_result()?.ends_with(':') {
+            let mut level = lines.consume_result()?.to_owned();
+            if level.pop() != Some(':') {
                 return Err(anyhow!("level doesn't end in ':'"));
             }
-            // groove
-            if !lines.consume_result()?.ends_with(':') {
+            let mut groove = lines.consume_result()?.to_owned();
+            if groove.pop() != Some(':') {
                 return Err(anyhow!("groove doesn't end in ':'"));
             }
             let notes = parse_chart(lines, bpms)?;
-            ret.push(SMChart { difficulty, notes });
+            ret.push(SMChart {
+                mode,
+                author,
+                difficulty,
+                level: level.parse()?,
+                notes,
+            });
         } else if line_is_notes(l) {
             return Err(anyhow!("Unexpected notes while not in #NOTES section"));
         }
@@ -362,7 +369,7 @@ fn test_parse_sm() {
 
     assert!(parse_sm("", false).is_err());
 
-    assert!(parse_sm("#TITLE:;\na:\nb:\nc:\nd:\ne:\n#BPMS:0.0=240.0", false).is_err());
+    assert!(parse_sm("#TITLE:;\na:\nb:\nc:\n1:\ne:\n#BPMS:0.0=240.0", false).is_err());
 
     assert!(parse_sm("#TITLE:\n#BPMS:0.0=240.0;", false).is_err());
 
@@ -419,20 +426,27 @@ fn test_parse_sm() {
     assert!(parse_sm("#TITLE:a;\n#BPMS:0.0=240.0\n;\n#NOTES:\n", false).is_err());
 
     assert!(parse_sm(
-        "#TITLE:a;\n#BPMS:0.0=240.0\n;\n#NOTES:\na:\nb:\nc:\nd:\ne:\n",
+        "#TITLE:a;\n#BPMS:0.0=240.0\n;\n#NOTES:\na:\nb:\nc:\n1:\ne:\n",
         false
     )
     .is_err());
 
     assert!(parse_sm(
-        "#TITLE:a;\n#BPMS:0.0=240.0\n;\n#NOTES:\na:\nb:\nc:\nd:\ne:\n;\n",
+        "#TITLE:a;\n#BPMS:0.0=240.0\n;\n#NOTES:\na:\nb:\nc:\n1:\ne:\n;\n",
         false
     )
     .is_err());
 
     assert!(parse_sm(
         "#TITLE:a;\n#BPMS:0.0=240.0\n;\n
-        #NOTES:\na:\nb:\nc:\nd:\ne:\n0000\n0000\n0000\n0000\n",
+        #NOTES:\na:\nb:\nc:\n1:\ne:\n0000\n0000\n0000\n0000\n",
+        false
+    )
+    .is_err());
+
+    assert!(parse_sm(
+        "#TITLE:a;\n#BPMS:0.0=240.0\n;\n
+        #NOTES:\na:\nb:\nc:\nd:\ne:\n0000\n0000\n0000\n0000\n;",
         false
     )
     .is_err());
@@ -440,7 +454,7 @@ fn test_parse_sm() {
     assert_eq!(
         parse_sm(
             "#TITLE:a;\n#BPMS:0.0=240.0\n;
-            \n#NOTES:\na:\nb:\nc:\nd:\ne:\n0000\n0000\n0000\n0000\n;\n",
+            \n#NOTES:\na:\nb:\nc:\n1:\ne:\n0000\n0000\n0000\n0000\n;\n",
             false
         )
         .unwrap()
@@ -451,7 +465,7 @@ fn test_parse_sm() {
 
     assert!(parse_sm(
         "#TITLE:a;\n#BPMS:0.0=240.0\n;\n
-        #NOTES:\na:\nb:\nc:\nd:\ne:\n0000\n0000\n0000\n0000\n;\n",
+        #NOTES:\na:\nb:\nc:\n1:\ne:\n0000\n0000\n0000\n0000\n;\n",
         false
     )
     .unwrap()
@@ -462,7 +476,7 @@ fn test_parse_sm() {
     assert_eq!(
         parse_sm(
             "#TITLE:a;\n#BPMS:0.0=240.0\n;
-            \n#NOTES:\na:\nb:\nc:\nd:\ne:\n1000\n0000\n0000\n0000\n;\n",
+            \n#NOTES:\na:\nb:\nc:\n1:\ne:\n1000\n0000\n0000\n0000\n;\n",
             false
         )
         .unwrap()
@@ -476,7 +490,7 @@ fn test_parse_sm() {
 
     assert_eq!(
         parse_sm(
-            "#TITLE:a;\n#BPMS:0.0=240.0\n;\n#NOTES:\na:\nb:\nc:\nd:\ne:\n
+            "#TITLE:a;\n#BPMS:0.0=240.0\n;\n#NOTES:\na:\nb:\nc:\n1:\ne:\n
             0011\n0000\n0000\n0000\n;\n",
             false
         )
@@ -498,7 +512,7 @@ fn test_parse_sm() {
     assert_eq!(
         parse_sm(
             "#TITLE:a;\n#BPMS:0.0=240.0\n;\n
-            #NOTES:\na:\nb:\nc:\nd:\ne:\n0000\n0000\n0010\n0000\n;\n",
+            #NOTES:\na:\nb:\nc:\n1:\ne:\n0000\n0000\n0010\n0000\n;\n",
             false
         )
         .unwrap()
@@ -513,7 +527,7 @@ fn test_parse_sm() {
     assert_eq!(
         parse_sm(
             "#TITLE:a;\n#BPMS:0.0=240.0\n;
-            \n#NOTES:\na:\nb:\nc:\nd:\ne:\n\n0000\n0000\n0100\n0000\n,
+            \n#NOTES:\na:\nb:\nc:\n1:\ne:\n\n0000\n0000\n0100\n0000\n,
             \n0000\n0010\n0000\n0000\n;\n",
             false
         )
@@ -535,19 +549,25 @@ fn test_parse_sm() {
     assert_eq!(
         parse_sm(
             "#TITLE:a;\n#BPMS:0.0=240.0\n;
-            \n#NOTES:\na:\na:\na:\na:\na:\n0000\n0000\n0000\n0000\n;
-            \n\n#NOTES:\nz:\nz:\nz:\nz:\nz:\n0000\n;",
+            \n#NOTES:\na:\na:\na:\n1:\na:\n0000\n0000\n0000\n0000\n;
+            \n\n#NOTES:\nz:\nz:\nz:\n2:\nz:\n0000\n;",
             false
         )
         .unwrap()
         .charts,
         vec![
             SMChart {
+                mode: "a".to_owned(),
+                author: "a".to_owned(),
                 difficulty: "a".to_owned(),
+                level: 1,
                 notes: vec![]
             },
             SMChart {
                 difficulty: "z".to_owned(),
+                mode: "z".to_owned(),
+                author: "z".to_owned(),
+                level: 2,
                 notes: vec![]
             }
         ]
@@ -555,22 +575,28 @@ fn test_parse_sm() {
 
     assert_eq!(
         parse_sm(
-            "#TITLE:a;\n#BPMS:0.0=240.0\n;\n#NOTES:\nz:\ny:\nx:\nw:\nv:
-            \n\n0000\n0000\n0000\n1000\n;\n\n#NOTES:\na:\nb:\nc:\nd:\ne:\n1000\n;",
+            "#TITLE:a;\n#BPMS:0.0=240.0\n;\n#NOTES:\nz:\ny:\nx:\n2:\nv:
+            \n\n0000\n0000\n0000\n1000\n;\n\n#NOTES:\na:\nb:\nc:\n3:\ne:\n1000\n;",
             false
         )
         .unwrap()
         .charts,
         vec![
             SMChart {
+                mode: "z".to_owned(),
+                author: "y".to_owned(),
                 difficulty: "x".to_owned(),
+                level: 2,
                 notes: vec![Note {
                     pos: Pos { x: 0., y: 1. },
                     time: 0.75
                 }]
             },
             SMChart {
+                mode: "a".to_owned(),
+                author: "b".to_owned(),
                 difficulty: "c".to_owned(),
+                level: 3,
                 notes: vec![Note {
                     pos: Pos { x: 0., y: 1. },
                     time: 0.
@@ -582,7 +608,7 @@ fn test_parse_sm() {
     assert_eq!(
         parse_sm(
             "#TITLE:a;\n#BPMS:0.0=240.0\n;
-            \n#NOTES:\na:\nb:\nc:\nd:\ne:\n1234\n0000\nLFM0\n0000\n;\n",
+            \n#NOTES:\na:\nb:\nc:\n1:\ne:\n1234\n0000\nLFM0\n0000\n;\n",
             false
         )
         .unwrap()
@@ -611,7 +637,7 @@ fn test_parse_sm() {
     assert_eq!(
         parse_sm(
             "#TITLE:a;\n#BPMS:0.0=240.0,2.0=60.0;
-            \n#NOTES:\na:\nb:\nc:\nd:\ne:\n1000\n1000\n1000\n1000\n;",
+            \n#NOTES:\na:\nb:\nc:\n1:\ne:\n1000\n1000\n1000\n1000\n;",
             false
         )
         .unwrap()
@@ -639,7 +665,7 @@ fn test_parse_sm() {
     assert_eq!(
         parse_sm(
             "#TITLE:a;\n#BPMS:0.0=240.0\n,2.0=60.0\n;
-            \n#NOTES:\na:\nb:\nc:\nd:\ne:\n1000\n1000\n1000\n1000\n;",
+            \n#NOTES:\na:\nb:\nc:\n1:\ne:\n1000\n1000\n1000\n1000\n;",
             false
         )
         .unwrap()
