@@ -41,16 +41,16 @@ fn main() -> Result<()> {
     for input in opts.inputs {
         let s = std::fs::read_to_string(input)?;
         let smresult = smparser::parse_sm(&s, opts.verbose)?;
-        for (difficulty, notes) in smresult.charts {
-            let name = format!("{} ({})", smresult.title, difficulty);
+        for chart in smresult.charts {
+            let name = format!("{} ({})", smresult.title, chart.difficulty);
             println!("{}", name);
-            let rating = rate_notes(&notes);
+            let rating = rate_notes(&chart.notes);
             println!("{}", rating);
             if opts.graph.is_some() {
-                let fatigues = fatigues_at_notes(&notes);
+                let fatigues = fatigues_at_notes(&chart.notes);
                 all_fatigues_over_time.push((
                     name,
-                    notes.iter().map(|n| n.time).collect(),
+                    chart.notes.iter().map(|n| n.time).collect(),
                     fatigues,
                 ));
             }
