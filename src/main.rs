@@ -5,7 +5,7 @@ mod smparser;
 
 use anyhow::Result;
 use gnuplot::*;
-use rate::{fatigues_at_notes, rate_notes};
+use rate::{fatigues_at_notes, rate_notes, state::StepParams};
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -38,16 +38,17 @@ fn graph(path: &PathBuf, vals: Vec<(String, Vec<f32>, Vec<f32>)>) {
 fn main() -> Result<()> {
     let opts = Opts::from_args();
     let mut all_fatigues_over_time = Vec::new();
+    let step_params = StepParams::default();
     for input in opts.inputs {
         let s = std::fs::read_to_string(input)?;
         let smresult = smparser::parse_sm(&s, opts.verbose)?;
         for chart in smresult.charts {
             let name = format!("{} ({})", smresult.title, chart.difficulty);
             println!("{}", name);
-            let rating = rate_notes(&chart.notes);
+            let rating = rate_notes(&chart.notes, &step_params);
             println!("{}", rating);
             if opts.graph.is_some() {
-                let fatigues = fatigues_at_notes(&chart.notes);
+                let fatigues = fatigues_at_notes(&chart.notes, &step_params);
                 all_fatigues_over_time.push((
                     name,
                     chart.notes.iter().map(|n| n.time).collect(),

@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use itgrate::note::{Note, Pos};
-use itgrate::rate::rate_notes;
+use itgrate::rate::{rate_notes, state::StepParams};
 
 pub fn benchmark_rate_notes(c: &mut Criterion) {
     let notes = (0..10000)
@@ -13,7 +13,7 @@ pub fn benchmark_rate_notes(c: &mut Criterion) {
         })
         .collect::<Vec<Note>>();
     c.bench_function("rate_notes(10000 notes)", |b| {
-        b.iter(|| (rate_notes(black_box(&notes))))
+        b.iter(|| (rate_notes(black_box(&notes), &StepParams::default())))
     });
 }
 

@@ -1,9 +1,9 @@
-mod state;
+pub mod state;
 
 use crate::note::Note;
 use daggy::{NodeIndex, Walker};
 use noisy_float::prelude::*;
-use state::{Foot, State};
+use state::{Foot, State, StepParams};
 
 type Dag = daggy::stable_dag::StableDag<State, ()>;
 
@@ -149,14 +149,19 @@ fn test_get_ancestor() {
 
 /// For each node, create all possible combinations of steps for each note.
 /// Returns all the deepest descendents created.
-fn create_descendents(dag: &mut Dag, notes: &[Note], cur_layer: &[NodeIndex]) -> Vec<NodeIndex> {
+fn create_descendents(
+    dag: &mut Dag,
+    notes: &[Note],
+    cur_layer: &[NodeIndex],
+    step_params: &StepParams,
+) -> Vec<NodeIndex> {
     let mut processing_nodes: Vec<NodeIndex> = cur_layer.into();
     let mut next_processing_nodes = Vec::new();
     for note in notes {
         for node in processing_nodes {
             let cur_state = dag[node];
             for foot in &[Foot::Left, Foot::Right] {
-                let next_state = cur_state.step(*foot, note);
+                let next_state = cur_state.step(*foot, note, step_params);
                 let (_, new_node) = dag.add_child(node, (), next_state);
                 next_processing_nodes.push(new_node);
             }
@@ -170,6 +175,7 @@ fn create_descendents(dag: &mut Dag, notes: &[Note], cur_layer: &[NodeIndex]) ->
 
 #[test]
 fn test_create_descendents() {
+    let step_params = StepParams::default();
     {
         let mut dag = Dag::new();
         let root = dag.add_node(State::default());
@@ -178,6 +184,7 @@ fn test_create_descendents() {
             &mut dag,
             &vec![Note::default(); DEPTH_PER_ITERATION],
             &[root],
+            &step_params,
         );
 
         assert_eq!(ret.len(), 1 << DEPTH_PER_ITERATION);
@@ -198,7 +205,7 @@ fn test_create_descendents() {
         let (_, a) = dag.add_child(root, (), State::default());
         let (_, b) = dag.add_child(root, (), State::default());
 
-        let ret = create_descendents(&mut dag, &notes, &[a, b]);
+        let ret = create_descendents(&mut dag, &notes, &[a, b], &step_params);
 
         assert_eq!(ret.len(), 1 << (DEPTH_PER_ITERATION + 1));
         assert_eq!(dag.node_count(), (1 << (DEPTH_PER_ITERATION + 2)) - 1);
@@ -214,8 +221,8 @@ fn test_create_descendents() {
         let mut l = State::default();
         let mut r = State::default();
         for n in &notes {
-            l = l.step(Foot::Left, n);
-            r = r.step(Foot::Right, n);
+            l = l.step(Foot::Left, n, &step_params);
+            r = r.step(Foot::Right, n, &step_params);
         }
         assert!(descendents(&dag, a).iter().any(|n| dag[*n] == l));
         assert!(descendents(&dag, a).iter().any(|n| dag[*n] == r));
@@ -337,7 +344,7 @@ fn convert_fatigue_to_rating(r: f32) -> f32 {
     r / 10000.
 }
 
-pub fn rating_dag(notes: &[Note]) -> Option<(Dag, NodeIndex)> {
+pub fn rating_dag(notes: &[Note], step_params: &StepParams) -> Option<(Dag, NodeIndex)> {
     if notes.is_empty() {
         return None;
     }
@@ -346,7 +353,7 @@ pub fn rating_dag(notes: &[Note]) -> Option<(Dag, NodeIndex)> {
     let root = dag.add_node(State::default());
     let mut cur_layer = vec![root];
     for cur_notes in notes.windows(DEPTH_PER_ITERATION) {
-        let deepest_descendents = create_descendents(&mut dag, cur_notes, &cur_layer);
+        let deepest_descendents = create_descendents(&mut dag, cur_notes, &cur_layer, step_params);
         cur_layer = find_best_nodes(
             &dag,
             &deepest_descendents,
@@ -363,7 +370,7 @@ pub fn rating_dag(notes: &[Note]) -> Option<(Dag, NodeIndex)> {
         .rev()
         .map(|n| *n)
         .collect::<Vec<Note>>();
-    let last_descendents = create_descendents(&mut dag, &last_notes, &cur_layer);
+    let last_descendents = create_descendents(&mut dag, &last_notes, &cur_layer, step_params);
 
     let best_ending_node = last_descendents
         .iter()
@@ -378,8 +385,8 @@ pub fn rating_dag(notes: &[Note]) -> Option<(Dag, NodeIndex)> {
     Some((dag, best_ending_node))
 }
 
-pub fn fatigues_at_notes(notes: &[Note]) -> Vec<f32> {
-    rating_dag(notes).map_or(Vec::new(), |(dag, best_ending_node)| {
+pub fn fatigues_at_notes(notes: &[Note], step_params: &StepParams) -> Vec<f32> {
+    rating_dag(notes, step_params).map_or(Vec::new(), |(dag, best_ending_node)| {
         let mut walk = dag
             .recursive_walk(best_ending_node, |g, n| g.parents(n).walk_next(g))
             .iter(&dag)
@@ -392,8 +399,8 @@ pub fn fatigues_at_notes(notes: &[Note]) -> Vec<f32> {
 
 /// Rates a sequence of notes.
 /// The notes should be in order time-wise.
-pub fn rate_notes(notes: &[Note]) -> f32 {
-    rating_dag(notes).map_or(0., |(dag, best_ending_node)| {
+pub fn rate_notes(notes: &[Note], step_params: &StepParams) -> f32 {
+    rating_dag(notes, step_params).map_or(0., |(dag, best_ending_node)| {
         convert_fatigue_to_rating(dag[best_ending_node].max_fatigue())
     })
 }

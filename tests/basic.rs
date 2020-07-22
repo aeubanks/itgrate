@@ -2,11 +2,11 @@ mod common;
 
 use common::create_notes;
 use itgrate::note::{Note, Pos};
-use itgrate::rate::{fatigues_at_notes, rate_notes};
+use itgrate::rate::{fatigues_at_notes, rate_notes, state::StepParams};
 
 #[test]
 fn empty() {
-    assert_eq!(rate_notes(&[]), 0.);
+    assert_eq!(rate_notes(&[], &StepParams::default()), 0.);
 }
 
 #[test]
@@ -23,7 +23,7 @@ fn faster_is_harder() {
                 |n| n / i as f32,
             )
         })
-        .map(|notes| rate_notes(&notes))
+        .map(|notes| rate_notes(&notes, &StepParams::default()))
         .collect::<Vec<f32>>();
     for w in ratings.windows(2) {
         // Ratings should increase with faster notes
@@ -45,7 +45,7 @@ fn more_is_harder() {
                 |n| n / 10.,
             )
         })
-        .map(|notes| rate_notes(&notes))
+        .map(|notes| rate_notes(&notes, &StepParams::default()))
         .collect::<Vec<f32>>();
     for w in ratings.windows(2) {
         // Ratings should increase with more notes
@@ -102,34 +102,34 @@ fn farther_is_harder() {
         .map(|n| n)
         .collect::<Vec<Note>>();
 
-    let r1 = rate_notes(&notes1);
-    let r2 = rate_notes(&notes2);
+    let r1 = rate_notes(&notes1, &StepParams::default());
+    let r2 = rate_notes(&notes2, &StepParams::default());
     assert!(r1 < r2);
 }
 
 #[test]
 fn one_note_after_break_doesnt_affect_difficulty() {
     let mut notes = create_notes(100, |_| Pos::default(), |f| f / 10.);
-    let r1 = rate_notes(&notes);
+    let r1 = rate_notes(&notes, &StepParams::default());
     notes.push(Note {
         pos: Pos::default(),
         time: 100.,
     });
-    let r2 = rate_notes(&notes);
+    let r2 = rate_notes(&notes, &StepParams::default());
     assert_eq!(r1, r2);
 }
 
 #[test]
 fn rating_at_notes_same_len_as_notes() {
     let notes = create_notes(100, |_| Pos::default(), |f| f / 10.);
-    let ratings = fatigues_at_notes(&notes);
+    let ratings = fatigues_at_notes(&notes, &StepParams::default());
     assert_eq!(notes.len(), ratings.len());
 }
 
 #[test]
 fn fatigue_keeps_increasing_in_unbroken_stream() {
     let notes = create_notes(100, |_| Pos::default(), |f| f / 10.);
-    let ratings = fatigues_at_notes(&notes);
+    let ratings = fatigues_at_notes(&notes, &StepParams::default());
     for w in ratings.windows(2) {
         assert!(w[0] < w[1], "{} {}", w[0], w[1]);
     }
