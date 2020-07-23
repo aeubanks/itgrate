@@ -190,7 +190,7 @@ fn test_bpm_measure_to_time() {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct SMChart {
     pub mode: String,
     pub author: String,
@@ -199,7 +199,7 @@ pub struct SMChart {
     pub notes: Vec<Note>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SMResult {
     pub title: String,
     pub charts: Vec<SMChart>,

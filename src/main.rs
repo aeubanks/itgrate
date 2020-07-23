@@ -1,12 +1,13 @@
 mod note;
 mod note_pos;
+mod optimize;
 mod rate;
 mod smparser;
 
 use anyhow::Result;
 use gnuplot::*;
 use rate::{fatigues_at_notes, rate_notes, state::StepParams};
-use smparser::SMResult;
+use smparser::{SMChart, SMResult};
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -39,9 +40,8 @@ fn graph(path: &PathBuf, vals: Vec<(String, Vec<f32>, Vec<f32>)>) {
     fg.save_to_png(path, 1280, 720).unwrap();
 }
 
-fn rate(sms: &[SMResult], graph_path: Option<PathBuf>) -> Result<()> {
+fn rate(sms: &[SMResult], graph_path: Option<PathBuf>, step_params: &StepParams) -> Result<()> {
     let mut all_fatigues_over_time = Vec::new();
-    let step_params = StepParams::default();
     for sm in sms {
         for chart in &sm.charts {
             let name = format!("{} ({})", sm.title, chart.difficulty);
@@ -64,8 +64,6 @@ fn rate(sms: &[SMResult], graph_path: Option<PathBuf>) -> Result<()> {
     Ok(())
 }
 
-fn optimize() {}
-
 fn parse(paths: &[PathBuf], verbose: bool) -> Result<Vec<SMResult>> {
     let mut ret = Vec::new();
 
@@ -81,9 +79,17 @@ fn main() -> Result<()> {
     let opts = Opts::from_args();
     let sms = parse(&opts.inputs, opts.verbose)?;
     if opts.optimize {
-        optimize();
+        let step_params = optimize::optimize(
+            &sms.clone()
+                .into_iter()
+                .flat_map(|sm| sm.charts.into_iter())
+                .collect::<Vec<SMChart>>(),
+            64,
+        )?;
+        println!("found StepParams: {:?}", step_params);
+        rate(&sms, opts.graph_path, &step_params)?;
     } else {
-        rate(&sms, opts.graph_path)?;
+        rate(&sms, opts.graph_path, &StepParams::default())?;
     }
     Ok(())
 }

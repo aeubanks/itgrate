@@ -1,6 +1,6 @@
 use crate::note::Note;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct StepParams {
     pub base_fatigue_per_step: f32,
     pub fatigue_per_step_ratio: f32,

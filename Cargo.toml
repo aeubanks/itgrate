@@ -14,6 +14,8 @@ anyhow = "1.0"
 daggy = { version = "0.7", features = ["stable_dag"] }
 gnuplot = "*"
 noisy_float = "0.1"
+oxigen = "*"
+rand = "*"
 structopt = "0.3"
 
 [dev-dependencies]
