@@ -4,7 +4,7 @@ mod optimize;
 mod rate;
 mod smparser;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use gnuplot::*;
 use rate::{fatigues_at_notes, rate_notes, state::StepParams};
 use smparser::{SMChart, SMResult};
@@ -69,7 +69,8 @@ fn parse(paths: &[PathBuf], verbose: bool) -> Result<Vec<SMResult>> {
 
     for p in paths {
         let s = std::fs::read_to_string(p)?;
-        let smresult = smparser::parse_sm(&s, verbose)?;
+        let smresult =
+            smparser::parse_sm(&s, verbose).with_context(|| format!("parsing {:?}", p))?;
         ret.push(smresult);
     }
     Ok(ret)

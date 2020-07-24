@@ -61,7 +61,7 @@ impl Lines {
         if self.is_valid() {
             let ret = &self.lines[self.idx];
             if self.verbose {
-                println!("consuming line:  {}", ret);
+                println!("consuming line: {}", ret);
             }
             self.idx += 1;
             Some(ret)
