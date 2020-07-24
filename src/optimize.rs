@@ -61,7 +61,7 @@ impl<'a> Genotype<f32> for RaterGenotype<'a> {
         let mut errors = Vec::with_capacity(self.charts.len());
         for chart in self.charts {
             let rating = rate_notes(&chart.notes, &step_params);
-            errors.push(rating - chart.level as f32);
+            errors.push(rating - (chart.level as f32 + 0.5));
         }
         -errors.iter().map(|f| f * f).sum::<f32>().sqrt() as f64
     }
