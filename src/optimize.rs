@@ -105,9 +105,9 @@ pub fn optimize(charts: &[SMChart], generations: u64) -> Result<StepParams> {
 
     let (_solutions, _generation, _progress, population) =
         GeneticExecution::<f32, RaterGenotype>::new()
-            .stop_criterion(Box::new(StopCriteria::Generation(64)))
+            .stop_criterion(Box::new(StopCriteria::Generation(generations)))
             .genotype_size(charts)
-            .progress_log(generations, progress_log)
+            .progress_log(1, progress_log)
             .run();
     let mut best = &population[0].ind;
     let mut best_fitness = std::f32::NEG_INFINITY;
