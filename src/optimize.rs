@@ -22,18 +22,6 @@ impl Display for RaterGenotype<'_> {
     }
 }
 
-impl RaterGenotype<'_> {
-    fn get_step_params(&self) -> StepParams {
-        StepParams {
-            base_fatigue_per_step: self.params[0],
-            fatigue_per_step_ratio: self.params[1],
-            fatigue_dist_ratio: self.params[2],
-            fatigue_decay_rate: self.params[3],
-            rest_time_add_constant: self.params[4],
-        }
-    }
-}
-
 impl<'a> Genotype<f32> for RaterGenotype<'a> {
     type ProblemSize = &'a [SMChart];
 
@@ -50,14 +38,15 @@ impl<'a> Genotype<f32> for RaterGenotype<'a> {
     }
 
     fn generate(charts: &Self::ProblemSize) -> Self {
+        let default = StepParams::default();
         Self {
-            params: vec![0.1, 0.1, 0.1, 0.1, 0.1],
+            params: default.to_params(),
             charts,
         }
     }
 
     fn fitness(&self) -> f64 {
-        let step_params = self.get_step_params();
+        let step_params = StepParams::from_params(&self.params);
         let mut errors = Vec::with_capacity(self.charts.len());
         for chart in self.charts {
             let rating = rate_notes(&chart.notes, &step_params);
@@ -122,7 +111,7 @@ pub fn optimize(charts: &[SMChart], generations: u64) -> Result<StepParams> {
             best = &p.ind;
         }
     }
-    Ok(best.get_step_params())
+    Ok(StepParams::from_params(&best.params))
 }
 
 #[test]

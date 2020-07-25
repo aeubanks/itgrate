@@ -21,6 +21,29 @@ impl Default for StepParams {
     }
 }
 
+impl StepParams {
+    pub fn from_params(params: &[f32]) -> Self {
+        assert_eq!(params.len(), 5);
+        Self {
+            base_fatigue_per_step: params[0],
+            fatigue_per_step_ratio: params[1],
+            fatigue_dist_ratio: params[2],
+            fatigue_decay_rate: params[3],
+            rest_time_add_constant: params[4],
+        }
+    }
+
+    pub fn to_params(&self) -> Vec<f32> {
+        vec![
+            self.base_fatigue_per_step,
+            self.fatigue_per_step_ratio,
+            self.fatigue_dist_ratio,
+            self.fatigue_decay_rate,
+            self.rest_time_add_constant,
+        ]
+    }
+}
+
 #[derive(Debug, PartialEq, Copy, Clone, Default)]
 pub struct FootStatus {
     last_hit: Option<Note>,
