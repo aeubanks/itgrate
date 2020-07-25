@@ -71,7 +71,9 @@ fn parse(paths: &[PathBuf], verbose: bool) -> Result<Vec<SMResult>> {
         let s = std::fs::read_to_string(p)?;
         let smresult =
             smparser::parse_sm(&s, verbose).with_context(|| format!("parsing {:?}", p))?;
-        ret.push(smresult);
+        if !smresult.charts.is_empty() {
+            ret.push(smresult);
+        }
     }
     Ok(ret)
 }
