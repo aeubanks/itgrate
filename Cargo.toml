@@ -16,6 +16,7 @@ gnuplot = "*"
 noisy_float = "0.1"
 oxigen = "*"
 rand = "*"
+regex = "*"
 structopt = "0.3"
 
 [dev-dependencies]

@@ -202,8 +202,70 @@ pub struct SMChart {
 
 impl SMChart {
     pub fn full_name(&self) -> String {
-        format!("{} ({})", self.title, self.difficulty)
+        let mut s = format!("{} ({})", self.title, self.difficulty);
+        let re = regex::Regex::new(r"^\[\d+\]").unwrap();
+        loop {
+            let new = re.replace(&s, "").trim().to_owned();
+            if s == new {
+                break;
+            }
+            s = new;
+        }
+        s
     }
+}
+
+#[test]
+fn test_full_name() {
+    assert_eq!(
+        SMChart {
+            title: "hi".to_owned(),
+            mode: "a".to_owned(),
+            author: "".to_owned(),
+            difficulty: "d".to_owned(),
+            level: 3,
+            notes: Vec::new()
+        }
+        .full_name(),
+        "hi (d)"
+    );
+
+    assert_eq!(
+        SMChart {
+            title: "[123] hi".to_owned(),
+            mode: "a".to_owned(),
+            author: "".to_owned(),
+            difficulty: "d".to_owned(),
+            level: 3,
+            notes: Vec::new()
+        }
+        .full_name(),
+        "hi (d)"
+    );
+    assert_eq!(
+        SMChart {
+            title: "[123][235] hi".to_owned(),
+            mode: "a".to_owned(),
+            author: "".to_owned(),
+            difficulty: "d".to_owned(),
+            level: 3,
+            notes: Vec::new()
+        }
+        .full_name(),
+        "hi (d)"
+    );
+    assert_eq!(
+        SMChart {
+            title: "[123][2]  [3]hi".to_owned(),
+            mode: "a".to_owned(),
+            author: "".to_owned(),
+            difficulty: "d".to_owned(),
+            level: 3,
+            notes: Vec::new()
+        }
+        .full_name(),
+        "hi (d)"
+    );
 }
 
 #[derive(Debug, Clone)]
