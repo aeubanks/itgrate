@@ -68,7 +68,11 @@ impl<'a> Genotype<f32> for RaterGenotype<'a> {
 
     fn mutate(&mut self, rgen: &mut SmallRng, _index: usize) {
         for f in &mut self.params {
-            *f += rgen.gen_range(-1., 1.);
+            if rgen.gen() {
+                *f *= rgen.gen_range(0., 2.);
+            } else {
+                *f += rgen.gen_range(-1., 1.);
+            }
         }
     }
 
