@@ -79,6 +79,7 @@ fn parse(paths: &[PathBuf], verbose: bool) -> Result<Vec<SMResult>> {
 fn main() -> Result<()> {
     let opts = Opts::from_args();
     let sms = parse(&opts.inputs, opts.verbose)?;
+    println!("parsed {} .sm files", sms.len());
     if opts.optimize {
         let step_params = optimize::optimize(
             &sms.clone()
