@@ -47,7 +47,7 @@ fn rate(sms: &[SMResult], graph_path: Option<PathBuf>, step_params: &StepParams)
             let name = format!("{} ({})", sm.title, chart.difficulty);
             println!("{}", name);
             let rating = rate_notes(&chart.notes, &step_params);
-            println!("{}", rating);
+            println!("[{}] {}", chart.level, rating);
             if graph_path.is_some() {
                 let fatigues = fatigues_at_notes(&chart.notes, &step_params);
                 all_fatigues_over_time.push((
