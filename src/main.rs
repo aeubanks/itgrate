@@ -42,16 +42,16 @@ fn graph(path: &PathBuf, vals: Vec<(String, Vec<f32>, Vec<f32>)>) {
 
 fn rate(sms: &[SMResult], graph_path: Option<PathBuf>, step_params: &StepParams) -> Result<()> {
     let mut all_fatigues_over_time = Vec::new();
+    let mut ratings = Vec::new();
     for sm in sms {
-        for chart in &sm.charts {
-            let name = format!("{} ({})", sm.title, chart.difficulty);
-            println!("{}", name);
+        for chart in &sm.0 {
+            println!("Rating {}...", chart.full_name());
             let rating = rate_notes(&chart.notes, &step_params);
-            println!("[{}] {}", chart.level, rating);
+            ratings.push((chart, rating));
             if graph_path.is_some() {
                 let fatigues = fatigues_at_notes(&chart.notes, &step_params);
                 all_fatigues_over_time.push((
-                    name,
+                    chart.full_name(),
                     chart.notes.iter().map(|n| n.time).collect(),
                     fatigues,
                 ));
@@ -60,6 +60,11 @@ fn rate(sms: &[SMResult], graph_path: Option<PathBuf>, step_params: &StepParams)
     }
     if let Some(graph_path) = graph_path {
         graph(&graph_path, all_fatigues_over_time);
+    }
+    ratings.sort_by(|(_, r1), (_, r2)| r1.partial_cmp(r2).unwrap());
+    for (chart, rating) in ratings {
+        println!("{}", chart.full_name());
+        println!(" [{}] {}", chart.level, rating);
     }
     Ok(())
 }
@@ -71,7 +76,7 @@ fn parse(paths: &[PathBuf], verbose: bool) -> Result<Vec<SMResult>> {
         let s = std::fs::read_to_string(p)?;
         let smresult =
             smparser::parse_sm(&s, verbose).with_context(|| format!("parsing {:?}", p))?;
-        if !smresult.charts.is_empty() {
+        if !smresult.0.is_empty() {
             ret.push(smresult);
         }
     }
@@ -86,7 +91,7 @@ fn main() -> Result<()> {
         let step_params = optimize::optimize(
             &sms.clone()
                 .into_iter()
-                .flat_map(|sm| sm.charts.into_iter())
+                .flat_map(|sm| sm.0.into_iter())
                 .collect::<Vec<SMChart>>(),
             32,
         )?;

@@ -192,6 +192,7 @@ fn test_bpm_measure_to_time() {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct SMChart {
+    pub title: String,
     pub mode: String,
     pub author: String,
     pub difficulty: String,
@@ -199,20 +200,23 @@ pub struct SMChart {
     pub notes: Vec<Note>,
 }
 
-#[derive(Debug, Clone)]
-pub struct SMResult {
-    pub title: String,
-    pub charts: Vec<SMChart>,
+impl SMChart {
+    pub fn full_name(&self) -> String {
+        format!("{} ({})", self.title, self.difficulty)
+    }
 }
+
+#[derive(Debug, Clone)]
+pub struct SMResult(pub Vec<SMChart>);
 
 pub fn parse_sm(s: &str, verbose: bool) -> Result<SMResult> {
     let mut lines = Lines::new(s, verbose);
 
     let title = parse_title(&mut lines).context("finding #TITLE:")?;
     let bpms = parse_bpm(&mut lines).context("finding #BPMS:")?;
-    let charts = parse_charts(&mut lines, &bpms)?;
+    let charts = parse_charts(&mut lines, &bpms, &title)?;
 
-    Ok(SMResult { title, charts })
+    Ok(SMResult(charts))
 }
 
 fn parse_title(lines: &mut Lines) -> Result<String> {
@@ -270,7 +274,7 @@ fn parse_bpm(lines: &mut Lines) -> Result<BPMs> {
     Ok(BPMs { bpm_changes: bpms })
 }
 
-fn parse_charts(lines: &mut Lines, bpms: &BPMs) -> Result<Vec<SMChart>> {
+fn parse_charts(lines: &mut Lines, bpms: &BPMs, title: &str) -> Result<Vec<SMChart>> {
     let mut ret = Vec::new();
     while let Some(l) = lines.consume() {
         if l == "#NOTES:" {
@@ -296,6 +300,7 @@ fn parse_charts(lines: &mut Lines, bpms: &BPMs) -> Result<Vec<SMChart>> {
             }
             let notes = parse_chart(lines, bpms)?;
             ret.push(SMChart {
+                title: title.to_owned(),
                 mode,
                 author,
                 difficulty,
@@ -377,50 +382,43 @@ fn test_parse_sm() {
 
     assert!(parse_sm("#TITLE:a;\n#BPMS:0.0240.0\n;", false).is_err());
 
-    assert_eq!(
-        parse_sm("#TITLE:a;\n#BPMS:0.0=240.0;", false)
-            .unwrap()
-            .title,
-        "a"
-    );
-
     assert!(parse_sm("#TITLE:a;\n#BPMS:0.0=240.0;", false)
         .unwrap()
-        .charts
+        .0
         .is_empty(),);
 
     assert!(parse_sm("#TITLE:a;\n#BPMS:0.0=240.0\n;", false)
         .unwrap()
-        .charts
+        .0
         .is_empty(),);
 
     assert!(parse_sm("#TITLE:a;\n#BPMS:0.0=240.0,10.0=250.0\n;", false)
         .unwrap()
-        .charts
+        .0
         .is_empty(),);
 
     assert!(parse_sm("#TITLE:a;\n#BPMS:0.0=240.0\n,10.0=250.0;", false)
         .unwrap()
-        .charts
+        .0
         .is_empty(),);
 
     assert!(
         parse_sm("#TITLE:a;\n#BPMS:0.0=240.0,\n10.0=250.0;\n", false)
             .unwrap()
-            .charts
+            .0
             .is_empty(),
     );
 
     assert!(
         parse_sm("#TITLE:a;\n#BPMS:0.0=240.0\n,10.0=250.0\n;", false)
             .unwrap()
-            .charts
+            .0
             .is_empty(),
     );
 
     assert!(parse_sm("#TITLE:a;\n#BPMS:0.0=240.0\n;\n", false)
         .unwrap()
-        .charts
+        .0
         .is_empty(),);
 
     assert!(parse_sm("#TITLE:a;\n#BPMS:0.0=240.0\n;\n#NOTES:\n", false).is_err());
@@ -458,7 +456,7 @@ fn test_parse_sm() {
             false
         )
         .unwrap()
-        .charts
+        .0
         .len(),
         1
     );
@@ -469,7 +467,7 @@ fn test_parse_sm() {
         false
     )
     .unwrap()
-    .charts[0]
+    .0[0]
         .notes
         .is_empty(),);
 
@@ -480,7 +478,7 @@ fn test_parse_sm() {
             false
         )
         .unwrap()
-        .charts[0]
+        .0[0]
             .notes,
         vec![Note {
             pos: Pos { x: 0., y: 1. },
@@ -495,7 +493,7 @@ fn test_parse_sm() {
             false
         )
         .unwrap()
-        .charts[0]
+        .0[0]
             .notes,
         vec![
             Note {
@@ -516,7 +514,7 @@ fn test_parse_sm() {
             false
         )
         .unwrap()
-        .charts[0]
+        .0[0]
             .notes,
         vec![Note {
             pos: Pos { x: 1., y: 2. },
@@ -532,7 +530,7 @@ fn test_parse_sm() {
             false
         )
         .unwrap()
-        .charts[0]
+        .0[0]
             .notes,
         vec![
             Note {
@@ -554,9 +552,10 @@ fn test_parse_sm() {
             false
         )
         .unwrap()
-        .charts,
+        .0,
         vec![
             SMChart {
+                title: "a".to_owned(),
                 mode: "a".to_owned(),
                 author: "a".to_owned(),
                 difficulty: "a".to_owned(),
@@ -564,6 +563,7 @@ fn test_parse_sm() {
                 notes: vec![]
             },
             SMChart {
+                title: "a".to_owned(),
                 difficulty: "z".to_owned(),
                 mode: "z".to_owned(),
                 author: "z".to_owned(),
@@ -580,9 +580,10 @@ fn test_parse_sm() {
             false
         )
         .unwrap()
-        .charts,
+        .0,
         vec![
             SMChart {
+                title: "a".to_owned(),
                 mode: "z".to_owned(),
                 author: "y".to_owned(),
                 difficulty: "x".to_owned(),
@@ -593,6 +594,7 @@ fn test_parse_sm() {
                 }]
             },
             SMChart {
+                title: "a".to_owned(),
                 mode: "a".to_owned(),
                 author: "b".to_owned(),
                 difficulty: "c".to_owned(),
@@ -612,7 +614,7 @@ fn test_parse_sm() {
             false
         )
         .unwrap()
-        .charts[0]
+        .0[0]
             .notes,
         vec![
             Note {
@@ -641,7 +643,7 @@ fn test_parse_sm() {
             false
         )
         .unwrap()
-        .charts[0]
+        .0[0]
             .notes,
         vec![
             Note {
@@ -669,7 +671,7 @@ fn test_parse_sm() {
             false
         )
         .unwrap()
-        .charts[0]
+        .0[0]
             .notes,
         vec![
             Note {

@@ -114,6 +114,7 @@ pub fn optimize(charts: &[SMChart], generations: u64) -> Result<StepParams> {
 #[test]
 fn sanity() -> Result<()> {
     let chart = SMChart {
+        title: "".to_owned(),
         mode: "".to_owned(),
         author: "".to_owned(),
         difficulty: "".to_owned(),
