@@ -99,6 +99,7 @@ pub fn optimize(charts: &[SMChart], generations: u64) -> Result<StepParams> {
     let (_solutions, _generation, _progress, population) =
         GeneticExecution::<f32, RaterGenotype>::new()
             .stop_criterion(Box::new(StopCriteria::Generation(generations)))
+            .population_size(32)
             .genotype_size(charts)
             .progress_log(1, progress_log)
             .run();

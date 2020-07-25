@@ -88,7 +88,7 @@ fn main() -> Result<()> {
                 .into_iter()
                 .flat_map(|sm| sm.charts.into_iter())
                 .collect::<Vec<SMChart>>(),
-            64,
+            32,
         )?;
         println!("found StepParams: {:?}", step_params);
         rate(&sms, opts.graph_path, &step_params)?;
