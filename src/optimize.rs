@@ -55,10 +55,8 @@ impl<'a> Genotype<f32> for RaterGenotype<'a> {
         -errors.iter().map(|f| f * f).sum::<f32>().sqrt() as f64
     }
 
-    fn mutate(&mut self, rgen: &mut SmallRng, _index: usize) {
-        for f in &mut self.params {
-            *f *= rgen.gen_range(0.5, 2.);
-        }
+    fn mutate(&mut self, rgen: &mut SmallRng, idx: usize) {
+        self.params[idx] *= rgen.gen_range(0.5, 2.);
     }
 
     fn is_solution(&self, _fitness: f64) -> bool {
@@ -99,16 +97,11 @@ pub fn optimize(charts: &[SMChart], generations: u64) -> Result<StepParams> {
             .genotype_size(charts)
             .progress_log(1, progress_log)
             .run();
-    let mut best = &population[0].ind;
-    let mut best_fitness = std::f32::NEG_INFINITY;
-    for p in population.iter().skip(1) {
-        let f = p.ind.fitness() as f32;
-        if f > best_fitness {
-            best_fitness = f;
-            best = &p.ind;
-        }
-    }
-    Ok(StepParams::from_params(&best.params))
+    let best = population
+        .iter()
+        .max_by(|a, b| a.ind.fitness().partial_cmp(&b.ind.fitness()).unwrap())
+        .unwrap();
+    Ok(StepParams::from_params(&best.ind.params))
 }
 
 #[test]
