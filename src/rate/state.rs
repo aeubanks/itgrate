@@ -5,7 +5,8 @@ pub struct StepParams {
     pub base_fatigue_per_step: f32,
     pub fatigue_per_step_ratio: f32,
     pub fatigue_dist_ratio: f32,
-    pub fatigue_decay_rate: f32,
+    pub fatigue_exp_decay_rate: f32,
+    pub fatigue_reciprocal_decay_rate: f32,
     pub rest_time_add_constant: f32,
     pub raw_rating_ratio: f32,
     pub raw_rating_log_ratio: f32,
@@ -17,7 +18,8 @@ impl Default for StepParams {
             base_fatigue_per_step: 123.32755,
             fatigue_per_step_ratio: 70.00814,
             fatigue_dist_ratio: 4.3021145,
-            fatigue_decay_rate: 0.03688551,
+            fatigue_exp_decay_rate: 0.03688551,
+            fatigue_reciprocal_decay_rate: 0.001,
             rest_time_add_constant: 16.75251,
             raw_rating_ratio: 0.0001,
             raw_rating_log_ratio: 0.00016262537,
@@ -27,15 +29,16 @@ impl Default for StepParams {
 
 impl StepParams {
     pub fn from_params(params: &[f32]) -> Self {
-        assert_eq!(params.len(), 7);
+        assert_eq!(params.len(), 8);
         Self {
             base_fatigue_per_step: params[0],
             fatigue_per_step_ratio: params[1],
             fatigue_dist_ratio: params[2],
-            fatigue_decay_rate: params[3],
-            rest_time_add_constant: params[4],
-            raw_rating_ratio: params[5],
-            raw_rating_log_ratio: params[6],
+            fatigue_exp_decay_rate: params[3],
+            fatigue_reciprocal_decay_rate: params[4],
+            rest_time_add_constant: params[5],
+            raw_rating_ratio: params[6],
+            raw_rating_log_ratio: params[7],
         }
     }
 
@@ -44,7 +47,8 @@ impl StepParams {
             self.base_fatigue_per_step,
             self.fatigue_per_step_ratio,
             self.fatigue_dist_ratio,
-            self.fatigue_decay_rate,
+            self.fatigue_exp_decay_rate,
+            self.fatigue_reciprocal_decay_rate,
             self.rest_time_add_constant,
             self.raw_rating_ratio,
             self.raw_rating_log_ratio,
@@ -60,7 +64,7 @@ pub struct FootStatus {
 
 impl FootStatus {
     fn fatigue_after_rest(prev_fatigue: f32, rest_time: f32, step_params: &StepParams) -> f32 {
-        prev_fatigue * (-rest_time * step_params.fatigue_decay_rate).exp()
+        prev_fatigue * (-rest_time * step_params.fatigue_exp_decay_rate).exp() * (1. / (1. + step_params.fatigue_reciprocal_decay_rate * rest_time))
     }
 
     fn fatigue_after_rest_and_step(
