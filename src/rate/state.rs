@@ -12,11 +12,11 @@ pub struct StepParams {
 impl Default for StepParams {
     fn default() -> Self {
         Self {
-            base_fatigue_per_step: 26.582926,
-            fatigue_per_step_ratio: 63.997425,
-            fatigue_dist_ratio: 0.65589476,
-            fatigue_decay_rate: 0.046889745,
-            rest_time_add_constant: 2.4311178,
+            base_fatigue_per_step: 123.32755,
+            fatigue_per_step_ratio: 70.00814,
+            fatigue_dist_ratio: 3.7955768,
+            fatigue_decay_rate: 0.03688551,
+            rest_time_add_constant: 16.75251,
         }
     }
 }

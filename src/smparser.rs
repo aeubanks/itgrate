@@ -268,17 +268,14 @@ fn test_full_name() {
     );
 }
 
-#[derive(Debug, Clone)]
-pub struct SMResult(pub Vec<SMChart>);
-
-pub fn parse_sm(s: &str, verbose: bool) -> Result<SMResult> {
+pub fn parse_sm(s: &str, verbose: bool) -> Result<Vec<SMChart>> {
     let mut lines = Lines::new(s, verbose);
 
     let title = parse_title(&mut lines).context("finding #TITLE:")?;
     let bpms = parse_bpm(&mut lines).context("finding #BPMS:")?;
     let charts = parse_charts(&mut lines, &bpms, &title)?;
 
-    Ok(SMResult(charts))
+    Ok(charts)
 }
 
 fn parse_title(lines: &mut Lines) -> Result<String> {
@@ -446,41 +443,34 @@ fn test_parse_sm() {
 
     assert!(parse_sm("#TITLE:a;\n#BPMS:0.0=240.0;", false)
         .unwrap()
-        .0
         .is_empty(),);
 
     assert!(parse_sm("#TITLE:a;\n#BPMS:0.0=240.0\n;", false)
         .unwrap()
-        .0
         .is_empty(),);
 
     assert!(parse_sm("#TITLE:a;\n#BPMS:0.0=240.0,10.0=250.0\n;", false)
         .unwrap()
-        .0
         .is_empty(),);
 
     assert!(parse_sm("#TITLE:a;\n#BPMS:0.0=240.0\n,10.0=250.0;", false)
         .unwrap()
-        .0
         .is_empty(),);
 
     assert!(
         parse_sm("#TITLE:a;\n#BPMS:0.0=240.0,\n10.0=250.0;\n", false)
             .unwrap()
-            .0
             .is_empty(),
     );
 
     assert!(
         parse_sm("#TITLE:a;\n#BPMS:0.0=240.0\n,10.0=250.0\n;", false)
             .unwrap()
-            .0
             .is_empty(),
     );
 
     assert!(parse_sm("#TITLE:a;\n#BPMS:0.0=240.0\n;\n", false)
         .unwrap()
-        .0
         .is_empty(),);
 
     assert!(parse_sm("#TITLE:a;\n#BPMS:0.0=240.0\n;\n#NOTES:\n", false).is_err());
@@ -518,7 +508,6 @@ fn test_parse_sm() {
             false
         )
         .unwrap()
-        .0
         .len(),
         1
     );
@@ -528,8 +517,7 @@ fn test_parse_sm() {
         #NOTES:\na:\nb:\nc:\n1:\ne:\n0000\n0000\n0000\n0000\n;\n",
         false
     )
-    .unwrap()
-    .0[0]
+    .unwrap()[0]
         .notes
         .is_empty(),);
 
@@ -539,8 +527,7 @@ fn test_parse_sm() {
             \n#NOTES:\na:\nb:\nc:\n1:\ne:\n1000\n0000\n0000\n0000\n;\n",
             false
         )
-        .unwrap()
-        .0[0]
+        .unwrap()[0]
             .notes,
         vec![Note {
             pos: Pos { x: 0., y: 1. },
@@ -554,8 +541,7 @@ fn test_parse_sm() {
             0011\n0000\n0000\n0000\n;\n",
             false
         )
-        .unwrap()
-        .0[0]
+        .unwrap()[0]
             .notes,
         vec![
             Note {
@@ -575,8 +561,7 @@ fn test_parse_sm() {
             #NOTES:\na:\nb:\nc:\n1:\ne:\n0000\n0000\n0010\n0000\n;\n",
             false
         )
-        .unwrap()
-        .0[0]
+        .unwrap()[0]
             .notes,
         vec![Note {
             pos: Pos { x: 1., y: 2. },
@@ -591,8 +576,7 @@ fn test_parse_sm() {
             \n0000\n0010\n0000\n0000\n;\n",
             false
         )
-        .unwrap()
-        .0[0]
+        .unwrap()[0]
             .notes,
         vec![
             Note {
@@ -613,8 +597,7 @@ fn test_parse_sm() {
             \n\n#NOTES:\nz:\nz:\nz:\n2:\nz:\n0000\n;",
             false
         )
-        .unwrap()
-        .0,
+        .unwrap(),
         vec![
             SMChart {
                 title: "a".to_owned(),
@@ -641,8 +624,7 @@ fn test_parse_sm() {
             \n\n0000\n0000\n0000\n1000\n;\n\n#NOTES:\na:\nb:\nc:\n3:\ne:\n1000\n;",
             false
         )
-        .unwrap()
-        .0,
+        .unwrap(),
         vec![
             SMChart {
                 title: "a".to_owned(),
@@ -675,8 +657,7 @@ fn test_parse_sm() {
             \n#NOTES:\na:\nb:\nc:\n1:\ne:\n1234\n0000\nLFM0\n0000\n;\n",
             false
         )
-        .unwrap()
-        .0[0]
+        .unwrap()[0]
             .notes,
         vec![
             Note {
@@ -704,8 +685,7 @@ fn test_parse_sm() {
             \n#NOTES:\na:\nb:\nc:\n1:\ne:\n1000\n1000\n1000\n1000\n;",
             false
         )
-        .unwrap()
-        .0[0]
+        .unwrap()[0]
             .notes,
         vec![
             Note {
@@ -732,8 +712,7 @@ fn test_parse_sm() {
             \n#NOTES:\na:\nb:\nc:\n1:\ne:\n1000\n1000\n1000\n1000\n;",
             false
         )
-        .unwrap()
-        .0[0]
+        .unwrap()[0]
             .notes,
         vec![
             Note {
