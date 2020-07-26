@@ -16,11 +16,11 @@ impl Default for StepParams {
         Self {
             base_fatigue_per_step: 123.32755,
             fatigue_per_step_ratio: 70.00814,
-            fatigue_dist_ratio: 3.7955768,
+            fatigue_dist_ratio: 4.3021145,
             fatigue_decay_rate: 0.03688551,
             rest_time_add_constant: 16.75251,
             raw_rating_ratio: 0.0001,
-            raw_rating_log_ratio: 0.00001,
+            raw_rating_log_ratio: 0.00016262537,
         }
     }
 }

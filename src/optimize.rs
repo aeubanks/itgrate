@@ -67,7 +67,7 @@ impl<'a> Genotype<f32> for RaterGenotype<'a> {
         let mut changed = false;
         for p in &mut self.params {
             if *p <= 0. {
-                *p = 0.0001;
+                *p = 0.00001;
                 changed = true;
             }
         }
