@@ -20,11 +20,14 @@ struct Opts {
     #[structopt(short = "v")]
     verbose: bool,
 
-    #[structopt(parse(from_os_str), short = "g")]
+    #[structopt(parse(from_os_str), short = "p")]
     graph_path: Option<PathBuf>,
 
     #[structopt(short = "o")]
     optimize: bool,
+
+    #[structopt(short = "g", default_value = "32")]
+    generations: u64,
 }
 
 fn graph(path: &PathBuf, vals: Vec<(String, Vec<f32>, Vec<f32>)>) {
@@ -84,7 +87,7 @@ fn main() -> Result<()> {
     let charts = parse(&opts.inputs, opts.verbose)?;
     println!("parsed {} .sm charts", charts.len());
     if opts.optimize {
-        let step_params = optimize::optimize(&charts, 32)?;
+        let step_params = optimize::optimize(&charts, opts.generations)?;
         println!("found StepParams: {:?}", step_params);
         rate(&charts, opts.graph_path, &step_params)?;
     } else {
