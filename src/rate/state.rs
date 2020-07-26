@@ -7,6 +7,8 @@ pub struct StepParams {
     pub fatigue_dist_ratio: f32,
     pub fatigue_decay_rate: f32,
     pub rest_time_add_constant: f32,
+    pub raw_rating_ratio: f32,
+    pub raw_rating_log_ratio: f32,
 }
 
 impl Default for StepParams {
@@ -17,19 +19,23 @@ impl Default for StepParams {
             fatigue_dist_ratio: 3.7955768,
             fatigue_decay_rate: 0.03688551,
             rest_time_add_constant: 16.75251,
+            raw_rating_ratio: 0.0001,
+            raw_rating_log_ratio: 0.00001,
         }
     }
 }
 
 impl StepParams {
     pub fn from_params(params: &[f32]) -> Self {
-        assert_eq!(params.len(), 5);
+        assert_eq!(params.len(), 7);
         Self {
             base_fatigue_per_step: params[0],
             fatigue_per_step_ratio: params[1],
             fatigue_dist_ratio: params[2],
             fatigue_decay_rate: params[3],
             rest_time_add_constant: params[4],
+            raw_rating_ratio: params[5],
+            raw_rating_log_ratio: params[6],
         }
     }
 
@@ -40,6 +46,8 @@ impl StepParams {
             self.fatigue_dist_ratio,
             self.fatigue_decay_rate,
             self.rest_time_add_constant,
+            self.raw_rating_ratio,
+            self.raw_rating_log_ratio,
         ]
     }
 }

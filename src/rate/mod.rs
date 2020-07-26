@@ -340,8 +340,8 @@ fn test_remove_all_descendents() {
 }
 
 /// Convert a raw rating to a more presentable rating.
-fn convert_fatigue_to_rating(r: f32) -> f32 {
-    r / 10000.
+fn convert_fatigue_to_rating(r: f32, step_params: &StepParams) -> f32 {
+    r * step_params.raw_rating_ratio + (r + 1.).log2() * step_params.raw_rating_log_ratio
 }
 
 pub fn rating_dag(notes: &[Note], step_params: &StepParams) -> Option<(Dag, NodeIndex)> {
@@ -401,6 +401,6 @@ pub fn fatigues_at_notes(notes: &[Note], step_params: &StepParams) -> Vec<f32> {
 /// The notes should be in order time-wise.
 pub fn rate_notes(notes: &[Note], step_params: &StepParams) -> f32 {
     rating_dag(notes, step_params).map_or(0., |(dag, best_ending_node)| {
-        convert_fatigue_to_rating(dag[best_ending_node].max_fatigue())
+        convert_fatigue_to_rating(dag[best_ending_node].max_fatigue(), step_params)
     })
 }
