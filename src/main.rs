@@ -1,3 +1,5 @@
+mod smparser;
+
 use clap::Parser;
 use std::collections::HashSet;
 use std::path::PathBuf;
@@ -41,7 +43,19 @@ fn main() {
         std::process::exit(1);
     }
 
-    for i in sm_files {
-        println!("Hello {:?}", i)
+    for sm_file in sm_files {
+        println!("Reading {:?}", sm_file);
+        let buf = std::fs::read(sm_file).unwrap();
+        let str = std::str::from_utf8(&buf).unwrap();
+        let charts = smparser::parse(str);
+        for chart in charts {
+            println!(
+                "{} - {} ({}) has {} notes",
+                chart.title,
+                chart.difficulty,
+                chart.rating,
+                chart.notes.len()
+            )
+        }
     }
 }
