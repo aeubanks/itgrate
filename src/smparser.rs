@@ -287,6 +287,7 @@ fn parse_steps(buf: &str, bpms: &BPMs) -> Option<Vec<Note>> {
                         steps.push(Note {
                             time: bpms.measure_to_time(cur_measure),
                         });
+                        break;
                     }
                     '0' | '3' | 'M' | 'L' | 'F' => {}
                     a => {
@@ -313,10 +314,7 @@ fn test_parse_steps() {
     assert_eq!(parse_steps("05", &bpms), None);
     assert_eq!(parse_steps("10", &bpms), Some(vec![Note { time: 0. }]));
     assert_eq!(parse_steps("00\n10", &bpms), Some(vec![Note { time: 2. }]));
-    assert_eq!(
-        parse_steps("11", &bpms),
-        Some(vec![Note { time: 0. }, Note { time: 0. }])
-    );
+    assert_eq!(parse_steps("11", &bpms), Some(vec![Note { time: 0. }]));
     assert_eq!(
         parse_steps("00\n,\n10", &bpms),
         Some(vec![Note { time: 4. }])
