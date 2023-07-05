@@ -122,7 +122,7 @@ fn split_notes(buf: &str) -> Option<(String, String, i32, String)> {
     let mut split = buf.split(':');
     let style = split.next()?.trim().to_owned();
     split.next()?;
-    let difficulty = split.next()?.to_owned();
+    let difficulty = split.next()?.trim().to_owned();
     let rating = match split.next()?.trim().parse::<i32>() {
         Ok(r) => r,
         Err(_) => {
@@ -146,7 +146,7 @@ fn test_split_notes() {
         Some(("a".into(), "c".into(), 0, "e".into()))
     );
     assert_eq!(
-        split_notes("a:b:c: 2 :d:e"),
+        split_notes("a:b: c: 2 :d:e"),
         Some(("a".into(), "c".into(), 2, "e".into()))
     );
     assert_eq!(split_notes("a:b:c:0:d"), None);
