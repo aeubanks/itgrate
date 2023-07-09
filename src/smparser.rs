@@ -357,6 +357,9 @@ pub fn parse(buf: &str) -> Vec<Chart> {
             if style != "dance-single" {
                 continue;
             }
+            if difficulty == "Edit" {
+                continue;
+            }
             charts.push(Chart {
                 title: title.clone(),
                 difficulty,
