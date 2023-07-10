@@ -2,9 +2,7 @@ mod rate;
 mod smparser;
 
 use clap::Parser;
-use rand::distributions::{Distribution, Uniform};
-use rand::Rng;
-use rate::{rate, Params};
+use rate::{rate, Params, Ratio};
 use smparser::Chart;
 use std::collections::HashSet;
 use std::path::PathBuf;
@@ -75,32 +73,16 @@ fn main() {
 
     let mut params = Params {
         step_1: 0.05,
-        step_2: 0.05,
-        linear: 0.1,
-        exp_1: 2.0,
-        exp_2: 2.0,
-        recip_1: 2.0,
-        recip_2: 2.0,
-        sigmoid_1: 2.0,
-        sigmoid_2: 2.0,
-        tanh_1: 2.0,
+        step_2: -0.05,
+        ratio: Ratio::Linear(0.1),
     };
     let mut err = error(&charts, params);
 
     let mut rng = rand::thread_rng();
-    let range = Uniform::from(0.9..1.1);
 
     for i in 0..9999 {
         let mut new_params = params;
-        if rng.gen() {
-            new_params.step_1 *= range.sample(&mut rng);
-        }
-        if rng.gen() {
-            new_params.step_2 *= range.sample(&mut rng);
-        }
-        if rng.gen() {
-            new_params.linear *= range.sample(&mut rng);
-        }
+        new_params.rand(&mut rng);
         let new_err = error(&charts, new_params);
         if new_err < err {
             params = new_params;

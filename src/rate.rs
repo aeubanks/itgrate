@@ -1,17 +1,91 @@
 use crate::smparser::Chart;
+use rand::distributions::{Distribution, Uniform};
+use rand::Rng;
+
+#[derive(Clone, Copy, Debug)]
+pub enum Ratio {
+    Linear(f32),
+    Exp(f32, f32),
+    Recip(f32, f32),
+    Sigmoid(f32, f32),
+    Tanh(f32),
+}
 
 #[derive(Clone, Copy, Debug)]
 pub struct Params {
     pub step_1: f32,
     pub step_2: f32,
-    pub linear: f32,
-    pub exp_1: f32,
-    pub exp_2: f32,
-    pub recip_1: f32,
-    pub recip_2: f32,
-    pub sigmoid_1: f32,
-    pub sigmoid_2: f32,
-    pub tanh_1: f32,
+    pub ratio: Ratio,
+}
+
+impl Params {
+    fn ratio(&self, dt: f32) -> f32 {
+        use Ratio::*;
+        // ratio = 1 when dt = 0, ratio -> 0 as dt -> inf
+        match self.ratio {
+            // max(1-ax,0)
+            Linear(a) => (1.0 - a * dt).max(0.0),
+            // a^(-bx)
+            Exp(a, b) => a.powf(-b * dt),
+            // 1/(1+ax)^b
+            Recip(a, b) => 1.0 / (1.0 + a * dt).powf(b),
+            // 2-2/(1+a^(-bx))
+            Sigmoid(a, b) => 2.0 - 2.0 / (1.0 + a.powf(-b * dt)),
+            // 1-tanh(ax)
+            Tanh(a) => 1.0 - (a * dt).tanh(),
+        }
+    }
+
+    pub fn rand<R>(&mut self, rng: &mut R)
+    where
+        R: Rng + ?Sized,
+    {
+        let range = Uniform::from(0.9..1.1);
+        if rng.gen() {
+            self.step_1 *= range.sample(rng);
+        }
+        if rng.gen() {
+            self.step_2 *= range.sample(rng);
+        }
+        use Ratio::*;
+        // ratio = 1 when dt = 0, ratio -> 0 as dt -> inf
+        match &mut self.ratio {
+            Linear(a) => {
+                if rng.gen() {
+                    *a *= range.sample(rng);
+                }
+            }
+            Exp(a, b) => {
+                if rng.gen() {
+                    *a *= range.sample(rng);
+                }
+                if rng.gen() {
+                    *b *= range.sample(rng);
+                }
+            }
+            Recip(a, b) => {
+                if rng.gen() {
+                    *a *= range.sample(rng);
+                }
+                if rng.gen() {
+                    *b *= range.sample(rng);
+                }
+            }
+            Sigmoid(a, b) => {
+                if rng.gen() {
+                    *a *= range.sample(rng);
+                }
+                if rng.gen() {
+                    *b *= range.sample(rng);
+                }
+            }
+            Tanh(a) => {
+                if rng.gen() {
+                    *a *= range.sample(rng);
+                }
+            }
+        }
+    }
 }
 
 struct State {
@@ -34,24 +108,13 @@ impl State {
         let dt = time - self.last_time;
         assert!(dt >= 0.);
 
-        // ratio = 1 when dt = 0, ratio -> 0 as dt -> inf
-        let ratio = (1.0 - self.params.linear * dt).max(0.0);
-        // All of the below converge to ~.29 error
-        // a^(-bx)
-        // let ratio = self.params.exp_1.powf(-self.params.exp_2 * dt);
-        // 1/(1+ax)^b
-        // let ratio = 1.0 / (1.0 + self.params.recip_1 * dt).powf(self.params.recip_2);
-        // 2-2/(1+a^(-bx))
-        // let ratio = 2.0 - 2.0 / (1.0 + self.params.sigmoid_1.powf(-self.params.sigmoid_2 * dt));
-        // 1-tanh(ax)
-        // let ratio = 1.0 - (self.params.tanh_1 * dt).tanh();
+        let ratio = self.params.ratio(dt);
 
         assert!(ratio >= 0.0);
         assert!(ratio <= 1.0);
 
         self.cur_fatigue *= ratio;
-        self.cur_fatigue +=
-            self.params.step_1 * (1.0 - self.params.step_2 + ratio * self.params.step_2);
+        self.cur_fatigue += self.params.step_1 + dt * self.params.step_2;
 
         if self.cur_fatigue > self.max_fatigue {
             self.max_fatigue = self.cur_fatigue;
