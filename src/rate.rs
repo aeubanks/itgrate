@@ -15,6 +15,7 @@ pub enum Ratio {
 pub struct Params {
     pub step_1: f32,
     pub step_2: f32,
+    pub dt_const: f32,
     pub ratio: Ratio,
 }
 
@@ -46,6 +47,9 @@ impl Params {
         }
         if rng.gen() {
             self.step_2 *= range.sample(rng);
+        }
+        if rng.gen() {
+            self.dt_const *= range.sample(rng);
         }
         use Ratio::*;
         // ratio = 1 when dt = 0, ratio -> 0 as dt -> inf
@@ -105,7 +109,7 @@ impl State {
         }
     }
     fn step(&mut self, time: f32) {
-        let dt = time - self.last_time;
+        let dt = time - self.last_time + self.params.dt_const;
         assert!(dt >= 0.);
 
         let ratio = self.params.ratio(dt);
