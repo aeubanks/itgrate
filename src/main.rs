@@ -14,6 +14,14 @@ struct Args {
 
     #[structopt(help = "Output graph path", short)]
     graph_path: Option<PathBuf>,
+
+    #[structopt(
+        help = "Iterations to hill climb",
+        short = 'i',
+        long = "hill-climb-iterations",
+        default_value = "9999"
+    )]
+    hill_climb_iterations: i32,
 }
 
 fn sm_files_impl(path: &PathBuf, set: &mut HashSet<PathBuf>) {
@@ -102,7 +110,7 @@ fn main() {
 
     let mut rng = rand::thread_rng();
 
-    for i in 0..9999 {
+    for i in 0..args.hill_climb_iterations {
         let mut new_params = params;
         new_params.rand(&mut rng);
         let new_err = error(&charts, new_params);
