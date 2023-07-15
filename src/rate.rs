@@ -129,10 +129,13 @@ impl State {
     }
 }
 
-pub fn rate(chart: &Chart, params: Params) -> f32 {
+pub fn rate(chart: &Chart, params: Params) -> (f32, Vec<(f32, f32)>) {
     let mut fatigue = State::with_params(params);
+    let mut fatigues = Vec::with_capacity(chart.notes.len());
+    fatigues.push((0.0, 0.0));
     for note in &chart.notes {
         fatigue.step(note.time);
+        fatigues.push((note.time, fatigue.cur_fatigue))
     }
-    fatigue.max_fatigue
+    (fatigue.max_fatigue, fatigues)
 }

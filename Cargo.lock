@@ -58,6 +58,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "630be753d4e58660abd17930c71b647fe46c27ea6b63cc59e1e3851406972e42"
 
 [[package]]
+name = "byteorder"
+version = "1.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14c189c53d098945499cdfa7ecc63567cf3886b3332b312a5b4585d8d3a6a610"
+
+[[package]]
 name = "cc"
 version = "1.0.79"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -149,6 +155,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "gnuplot"
+version = "0.0.38"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c3980f1547c7c19b51b5a89fbc6b8913a7d441c7f017547d5b40079ba7ca0321"
+dependencies = [
+ "byteorder",
+]
+
+[[package]]
 name = "heck"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -176,6 +191,7 @@ name = "itgrate2"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "gnuplot",
  "rand",
 ]
 

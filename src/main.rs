@@ -11,6 +11,9 @@ use std::path::PathBuf;
 struct Args {
     #[structopt(help = "Paths of/directories containing .sm files")]
     inputs: Vec<PathBuf>,
+
+    #[structopt(help = "Output graph path", short)]
+    graph_path: Option<PathBuf>,
 }
 
 fn sm_files_impl(path: &PathBuf, set: &mut HashSet<PathBuf>) {
@@ -52,11 +55,29 @@ fn charts(sm_files: &[PathBuf]) -> Vec<smparser::Chart> {
 fn error(charts: &[Chart], params: Params) -> f32 {
     let mut error = 0.;
     for chart in charts {
-        let rating = rate(chart, params);
+        let (rating, _) = rate(chart, params);
         let dr = rating - (chart.rating as f32 + 0.5);
         error += dr * dr;
     }
     error / charts.len() as f32
+}
+
+fn graph_fatigues(path: &PathBuf, charts: &Vec<(Chart, f32, Vec<(f32, f32)>)>) {
+    use gnuplot::*;
+
+    let mut fg = gnuplot::Figure::new();
+    let a = fg
+        .axes2d()
+        .set_x_label("time", &[])
+        .set_y_label("fatigue", &[]);
+    for (chart, _, fatigue_times) in charts {
+        let times = fatigue_times.iter().map(|(a, _)| *a).collect::<Vec<_>>();
+        let fatigues = fatigue_times.iter().map(|(_, a)| *a).collect::<Vec<_>>();
+        let caption = format!("{} ({})", chart.title, chart.difficulty);
+        a.points(times, fatigues, &[PlotOption::Caption(&caption)]);
+    }
+    fg.save_to_png(path, 1280, 720).unwrap();
+    println!("drew fatigue graph to {:?}", path);
 }
 
 fn main() {
@@ -97,19 +118,23 @@ fn main() {
 
     let mut ratings = Vec::new();
     for chart in charts {
-        let r = rate(&chart, params);
-        ratings.push((r, chart));
+        let (rating, fatigues) = rate(&chart, params);
+        ratings.push((chart, rating, fatigues));
     }
-    ratings.sort_by(|(r1, _), (r2, _)| r1.total_cmp(r2));
+    ratings.sort_by(|(_, r1, _), (_, r2, _)| r1.total_cmp(r2));
 
-    for (r, c) in ratings {
+    if let Some(graph_path) = args.graph_path {
+        graph_fatigues(&graph_path, &ratings);
+    }
+
+    for (chart, rating, _) in ratings {
         println!(
             "{:>5.2}: {:2}, {:6} notes - {} ({})",
-            r,
-            c.rating,
-            c.notes.len(),
-            c.title,
-            c.difficulty
+            rating,
+            chart.rating,
+            chart.notes.len(),
+            chart.title,
+            chart.difficulty
         );
     }
 }
