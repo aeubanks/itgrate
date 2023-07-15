@@ -3,6 +3,7 @@ use rand::distributions::{Distribution, Uniform};
 use rand::Rng;
 
 #[derive(Clone, Copy, Debug)]
+#[allow(dead_code)]
 pub enum Ratio {
     Linear(f32),
     Exp(f32, f32),
