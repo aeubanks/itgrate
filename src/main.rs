@@ -101,10 +101,10 @@ fn main() {
     let charts = charts(&sm_files);
 
     let mut params = Params {
-        step_1: 0.07,
-        step_2: -0.06,
-        dt_const: 0.004,
-        ratio: Ratio::Linear(0.04),
+        step_1: 0.065,
+        step_2: -0.05,
+        dt_const: 0.0023,
+        ratio: Ratio::Linear(0.0422),
     };
     let mut err = error(&charts, params);
 
