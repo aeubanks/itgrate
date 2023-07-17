@@ -110,7 +110,7 @@ impl State {
         }
     }
     fn step(&mut self, time: f32) {
-        let dt = time - self.last_time + self.params.dt_const;
+        let dt = (time - self.last_time + 1.0).ln() + self.params.dt_const;
         assert!(dt >= 0.);
 
         let ratio = self.params.ratio(dt);
