@@ -115,8 +115,9 @@ impl State {
 
         let ratio = self.params.ratio(dt);
 
-        assert!(ratio >= 0.0);
-        assert!(ratio <= 1.0);
+        if ratio < 0.0 || ratio > 1.0 {
+            panic!("unexpected ratio: {}, dt {}", ratio, dt);
+        }
 
         self.cur_fatigue *= ratio;
         self.cur_fatigue += self.params.step_1 + dt * self.params.step_2;
