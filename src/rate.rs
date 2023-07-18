@@ -1,4 +1,4 @@
-use crate::smparser::Chart;
+use crate::chart::Chart;
 use rand::distributions::{Distribution, Uniform};
 use rand::Rng;
 

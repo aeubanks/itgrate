@@ -1,9 +1,10 @@
+mod chart;
 mod rate;
 mod smparser;
 
+use chart::Chart;
 use clap::Parser;
 use rate::{rate, Params, Ratio};
-use smparser::Chart;
 use std::collections::HashSet;
 use std::path::PathBuf;
 
@@ -11,6 +12,9 @@ use std::path::PathBuf;
 struct Args {
     #[structopt(help = "Paths of/directories containing .sm files")]
     inputs: Vec<PathBuf>,
+
+    #[structopt(help = "Use preset charts", short = 'p')]
+    use_preset_charts: bool,
 
     #[structopt(help = "Output graph path", short)]
     graph_path: Option<PathBuf>,
@@ -47,7 +51,7 @@ fn sm_files(paths: &[PathBuf]) -> Vec<PathBuf> {
     set.into_iter().collect()
 }
 
-fn charts(sm_files: &[PathBuf]) -> Vec<smparser::Chart> {
+fn charts(sm_files: &[PathBuf], preset_charts: bool) -> Vec<Chart> {
     let mut charts = Vec::new();
     for sm_file in sm_files {
         println!("Reading {:?}", sm_file);
@@ -56,6 +60,71 @@ fn charts(sm_files: &[PathBuf]) -> Vec<smparser::Chart> {
         for chart in smparser::parse(str) {
             charts.push(chart);
         }
+    }
+    if preset_charts {
+        charts.push(Chart::from_unbroken(170., 96, 15));
+        charts.push(Chart::from_unbroken(170., 128, 15));
+        charts.push(Chart::from_unbroken(170., 192, 16));
+        charts.push(Chart::from_unbroken(170., 256, 16));
+        charts.push(Chart::from_unbroken(170., 384, 17));
+        charts.push(Chart::from_unbroken(170., 512, 17));
+
+        charts.push(Chart::from_unbroken(180., 64, 15));
+        charts.push(Chart::from_unbroken(180., 96, 15));
+        charts.push(Chart::from_unbroken(180., 128, 16));
+        charts.push(Chart::from_unbroken(180., 192, 16));
+        charts.push(Chart::from_unbroken(180., 256, 17));
+        charts.push(Chart::from_unbroken(180., 384, 17));
+        charts.push(Chart::from_unbroken(180., 512, 18));
+
+        charts.push(Chart::from_unbroken(190., 48, 15));
+        charts.push(Chart::from_unbroken(190., 64, 15));
+        charts.push(Chart::from_unbroken(190., 96, 16));
+        charts.push(Chart::from_unbroken(190., 128, 17));
+        charts.push(Chart::from_unbroken(190., 192, 17));
+        charts.push(Chart::from_unbroken(190., 256, 18));
+        charts.push(Chart::from_unbroken(190., 384, 18));
+        charts.push(Chart::from_unbroken(190., 512, 19));
+
+        charts.push(Chart::from_unbroken(200., 32, 15));
+        charts.push(Chart::from_unbroken(200., 48, 15));
+        charts.push(Chart::from_unbroken(200., 64, 16));
+        charts.push(Chart::from_unbroken(200., 96, 17));
+        charts.push(Chart::from_unbroken(200., 128, 17));
+        charts.push(Chart::from_unbroken(200., 192, 18));
+        charts.push(Chart::from_unbroken(200., 256, 19));
+        charts.push(Chart::from_unbroken(200., 384, 19));
+        charts.push(Chart::from_unbroken(200., 512, 20));
+
+        charts.push(Chart::from_unbroken(210., 32, 15));
+        charts.push(Chart::from_unbroken(210., 48, 16));
+        charts.push(Chart::from_unbroken(210., 64, 17));
+        charts.push(Chart::from_unbroken(210., 96, 18));
+        charts.push(Chart::from_unbroken(210., 128, 18));
+        charts.push(Chart::from_unbroken(210., 192, 19));
+        charts.push(Chart::from_unbroken(210., 256, 20));
+        charts.push(Chart::from_unbroken(210., 384, 20));
+        charts.push(Chart::from_unbroken(210., 512, 21));
+
+        charts.push(Chart::from_unbroken(220., 32, 16));
+        charts.push(Chart::from_unbroken(220., 48, 17));
+        charts.push(Chart::from_unbroken(220., 64, 18));
+        charts.push(Chart::from_unbroken(220., 96, 19));
+        charts.push(Chart::from_unbroken(220., 128, 19));
+        charts.push(Chart::from_unbroken(220., 192, 20));
+        charts.push(Chart::from_unbroken(220., 256, 21));
+        charts.push(Chart::from_unbroken(220., 384, 22));
+        charts.push(Chart::from_unbroken(220., 512, 22));
+
+        charts.push(Chart::from_unbroken(230., 32, 17));
+        charts.push(Chart::from_unbroken(230., 48, 18));
+        charts.push(Chart::from_unbroken(230., 64, 19));
+        charts.push(Chart::from_unbroken(230., 96, 20));
+        charts.push(Chart::from_unbroken(230., 128, 20));
+        charts.push(Chart::from_unbroken(230., 192, 21));
+        charts.push(Chart::from_unbroken(230., 256, 22));
+        charts.push(Chart::from_unbroken(230., 384, 22));
+        charts.push(Chart::from_unbroken(230., 512, 23));
     }
     charts
 }
@@ -93,12 +162,12 @@ fn main() {
 
     let sm_files = sm_files(&args.inputs);
 
-    if sm_files.is_empty() {
-        println!("Didn't find any sm files");
+    let charts = charts(&sm_files, args.use_preset_charts);
+
+    if charts.is_empty() {
+        println!("No simfiles?");
         std::process::exit(1);
     }
-
-    let charts = charts(&sm_files);
 
     let mut params = Params {
         step_1: 0.065,

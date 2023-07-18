@@ -1,16 +1,5 @@
+use crate::chart::{Chart, Note};
 use std::collections::HashMap;
-
-#[derive(PartialEq, Debug)]
-pub struct Note {
-    pub time: f32,
-}
-
-pub struct Chart {
-    pub title: String,
-    pub difficulty: String,
-    pub notes: Vec<Note>,
-    pub rating: i32,
-}
 
 fn parse_msd(buf: &str) -> Option<HashMap<String, Vec<String>>> {
     let mut map = HashMap::<String, Vec<String>>::new();
