@@ -206,12 +206,11 @@ fn main() {
 
     for (chart, rating, _) in ratings {
         println!(
-            "{:>5.2}: {:2}, {:6} notes - {} ({})",
+            "{:>5.2}: {:2}, {:6} notes - {}",
             rating,
             chart.rating,
             chart.notes.len(),
-            chart.title,
-            chart.difficulty
+            chart.description(),
         );
     }
 }

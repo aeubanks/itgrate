@@ -11,6 +11,16 @@ pub struct Chart {
 }
 
 impl Chart {
+    pub fn description(&self) -> String {
+        if self.difficulty.is_empty() {
+            self.title.clone()
+        } else {
+            format!("{} ({})", self.title, self.difficulty)
+        }
+    }
+}
+
+impl Chart {
     pub fn from_unbroken(bpm: f32, measures: i32, rating: i32) -> Self {
         let num_notes = measures * 16;
         let mut notes = Vec::with_capacity(num_notes as usize);
