@@ -167,7 +167,7 @@ fn graph_fatigues(path: &PathBuf, charts: &Vec<(Chart, f32, Vec<(f32, f32)>)>) {
     for (chart, _, fatigue_times) in charts {
         let times = fatigue_times.iter().map(|(a, _)| *a).collect::<Vec<_>>();
         let fatigues = fatigue_times.iter().map(|(_, a)| *a).collect::<Vec<_>>();
-        let caption = format!("{} ({})", chart.title, chart.difficulty);
+        let caption = chart.description().replace("@", "\\@");
         a.points(times, fatigues, &[PlotOption::Caption(&caption)]);
     }
     fg.save_to_png(path, 1280, 720).unwrap();
