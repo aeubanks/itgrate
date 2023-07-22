@@ -3,29 +3,38 @@ mod rate;
 mod smparser;
 
 use chart::Chart;
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use rate::{rate, Params, Ratio};
 use std::collections::HashSet;
 use std::path::PathBuf;
 
 #[derive(Parser)]
 struct Args {
-    #[structopt(help = "Paths of/directories containing .sm files")]
+    #[arg(help = "Paths of/directories containing .sm files", global = true)]
     inputs: Vec<PathBuf>,
 
-    #[structopt(help = "Use preset charts", short = 'p')]
+    #[arg(help = "Use preset charts", short = 'p', global = true)]
     use_preset_charts: bool,
 
-    #[structopt(help = "Output graph path", short)]
-    graph_path: Option<PathBuf>,
+    #[command(subcommand)]
+    command: Command,
+}
 
-    #[structopt(
-        help = "Iterations to hill climb",
-        short = 'i',
-        long = "hill-climb-iterations",
-        default_value = "9999"
-    )]
-    hill_climb_iterations: i32,
+#[derive(Subcommand)]
+enum Command {
+    Train {
+        #[arg(
+            help = "Iterations to hill climb",
+            short = 'i',
+            long = "hill-climb-iterations",
+            default_value = "9999"
+        )]
+        hill_climb_iterations: i32,
+    },
+    Graph {
+        #[arg(help = "Output graph path", short = 'o')]
+        graph_path: PathBuf,
+    },
 }
 
 fn sm_files_impl(path: &PathBuf, set: &mut HashSet<PathBuf>) {
@@ -51,7 +60,11 @@ fn sm_files(paths: &[PathBuf]) -> Vec<PathBuf> {
     set.into_iter().collect()
 }
 
-fn charts(sm_files: &[PathBuf], preset_charts: bool) -> Vec<Chart> {
+fn charts(
+    sm_files: &[PathBuf],
+    preset_charts: bool,
+    only_longest_preset_charts: bool,
+) -> Vec<Chart> {
     let mut charts = Vec::new();
     for sm_file in sm_files {
         println!("Reading {:?}", sm_file);
@@ -125,6 +138,10 @@ fn charts(sm_files: &[PathBuf], preset_charts: bool) -> Vec<Chart> {
         charts.push(Chart::from_unbroken(230., 256, 22));
         charts.push(Chart::from_unbroken(230., 384, 22));
         charts.push(Chart::from_unbroken(230., 512, 23));
+
+        if only_longest_preset_charts {
+            charts.retain(|c| c.notes.len() == 512 * 16);
+        }
     }
     charts
 }
@@ -162,7 +179,11 @@ fn main() {
 
     let sm_files = sm_files(&args.inputs);
 
-    let charts = charts(&sm_files, args.use_preset_charts);
+    let charts = charts(
+        &sm_files,
+        args.use_preset_charts,
+        matches!(args.command, Command::Graph { graph_path: _ }),
+    );
 
     if charts.is_empty() {
         println!("No simfiles?");
@@ -175,24 +196,29 @@ fn main() {
         dt_const: 0.0023,
         ratio: Ratio::Linear(0.0422),
     };
-    let mut err = error(&charts, params);
 
-    let mut rng = rand::thread_rng();
+    if let Command::Train {
+        hill_climb_iterations,
+    } = args.command
+    {
+        let mut err = error(&charts, params);
 
-    for i in 0..args.hill_climb_iterations {
-        let mut new_params = params;
-        new_params.rand(&mut rng);
-        let new_err = error(&charts, new_params);
-        if new_err < err {
-            params = new_params;
-            err = new_err;
-            println!("iteration {}", i);
-            println!("better params: {:?}, err {}", params, err);
+        let mut rng = rand::thread_rng();
+
+        for i in 0..hill_climb_iterations {
+            let mut new_params = params;
+            new_params.rand(&mut rng);
+            let new_err = error(&charts, new_params);
+            if new_err < err {
+                params = new_params;
+                err = new_err;
+                println!("iteration {}", i);
+                println!("better params: {:?}, err {}", params, err);
+            }
         }
+
+        println!("params: {:?}, err {}", params, err);
     }
-
-    println!("params: {:?}, err {}", params, err);
-
     let mut ratings = Vec::new();
     for chart in charts {
         let (rating, fatigues) = rate(&chart, params);
@@ -200,7 +226,7 @@ fn main() {
     }
     ratings.sort_by(|(_, r1, _), (_, r2, _)| r1.total_cmp(r2));
 
-    if let Some(graph_path) = args.graph_path {
+    if let Command::Graph { graph_path } = args.command {
         graph_fatigues(&graph_path, &ratings);
     }
 
