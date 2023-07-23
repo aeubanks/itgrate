@@ -27,8 +27,9 @@ fn error(charts: &[Chart], params: Params) -> F1 {
 }
 
 pub fn train(charts: &[Chart], params: Params, iterations: i32) -> Params {
-    let mut learning_rate = 0.0001;
+    let mut learning_rate = 0.001;
     let mut v = params_to_vec(params);
+    let mut best_err = error(charts, vec_to_params(&v));
     for i in 0..iterations {
         println!("iteration {}", i);
         let grad = autodiff::grad(
@@ -46,15 +47,24 @@ pub fn train(charts: &[Chart], params: Params, iterations: i32) -> Params {
             },
             &v,
         );
-        for (x, g) in v.iter_mut().zip(grad.iter()) {
+        let mut v_new = v.clone();
+        for (x, g) in v_new.iter_mut().zip(grad.iter()) {
             *x -= g * learning_rate;
+            *x = x.max(0.0);
         }
-        v[2] = v[2].max(0.0);
-
-        println!("updated params: {:?}", &v);
-        let err = error(charts, vec_to_params(&v));
+        println!("updated params: {:?}", &v_new);
+        let err = error(charts, vec_to_params(&v_new));
         println!("err {}", err.value());
-        learning_rate *= 0.99;
+        if err > best_err {
+            learning_rate *= 0.5;
+            println!(
+                "new error higher than previous, retrying with smaller learning rate {}",
+                learning_rate
+            );
+            continue;
+        }
+        v = v_new;
+        best_err = err;
     }
 
     vec_to_params(&v)
