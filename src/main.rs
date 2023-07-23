@@ -5,7 +5,7 @@ mod train;
 
 use chart::Chart;
 use clap::{Parser, Subcommand};
-use rate::{rate, Params, Ratio};
+use rate::{rate, Params};
 use std::collections::HashSet;
 use std::path::PathBuf;
 
@@ -25,12 +25,12 @@ struct Args {
 enum Command {
     Train {
         #[arg(
-            help = "Iterations to hill climb",
+            help = "Iterations to perform gradient descent",
             short = 'i',
-            long = "hill-climb-iterations",
-            default_value = "9999"
+            long = "gradient-descent-iterations",
+            default_value = "999"
         )]
-        hill_climb_iterations: i32,
+        gradient_descent_iterations: i32,
     },
     Graph {
         #[arg(help = "Output graph path", short = 'o')]
@@ -81,7 +81,7 @@ fn charts(
     charts
 }
 
-fn graph_fatigues(path: &PathBuf, charts: &Vec<(Chart, f32, Vec<(f32, f32)>)>) {
+fn graph_fatigues(path: &PathBuf, charts: &[(&Chart, &Vec<(f32, f32)>)]) {
     use gnuplot::*;
 
     let mut fg = gnuplot::Figure::new();
@@ -89,7 +89,7 @@ fn graph_fatigues(path: &PathBuf, charts: &Vec<(Chart, f32, Vec<(f32, f32)>)>) {
         .axes2d()
         .set_x_label("time", &[])
         .set_y_label("fatigue", &[]);
-    for (chart, _, fatigue_times) in charts {
+    for (chart, fatigue_times) in charts {
         let times = fatigue_times.iter().map(|(a, _)| *a).collect::<Vec<_>>();
         let fatigues = fatigue_times.iter().map(|(_, a)| *a).collect::<Vec<_>>();
         let caption = chart.description().replace("@", "\\@");
@@ -115,29 +115,31 @@ fn main() {
         std::process::exit(1);
     }
 
-    let mut params = Params {
-        step_1: 0.065,
-        step_2: -0.05,
-        dt_const: 0.0023,
-        ratio: Ratio::Linear(0.0422),
-    };
+    let mut params = Params::new(
+        0.43952173406751643,
+        -0.05058234338908158,
+        0.12628453384539626,
+        0.35055958182802327,
+        0.3506681434845905,
+    );
 
     if let Command::Train {
-        hill_climb_iterations,
+        gradient_descent_iterations,
     } = args.command
     {
-        params = train::train(&charts, params, hill_climb_iterations);
+        params = train::train(&charts, params, gradient_descent_iterations);
     }
 
     let mut ratings = Vec::new();
     for chart in charts {
         let (rating, fatigues) = rate(&chart, params);
-        ratings.push((chart, rating, fatigues));
+        ratings.push((chart, rating.value(), fatigues));
     }
-    ratings.sort_by(|(_, r1, _), (_, r2, _)| r1.total_cmp(r2));
+    ratings.sort_by(|(_, r1, _), (_, r2, _)| r1.total_cmp(&r2));
 
     if let Command::Graph { graph_path } = args.command {
-        graph_fatigues(&graph_path, &ratings);
+        let mapped = ratings.iter().map(|(a, _, c)| (a, c)).collect::<Vec<_>>();
+        graph_fatigues(&graph_path, &mapped);
     }
 
     for (chart, rating, _) in ratings {
