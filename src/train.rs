@@ -25,11 +25,11 @@ pub fn train(charts: &[Chart], params: Params, iterations: i32) -> Params {
                 error(
                     charts,
                     Params {
-                        step_1: x[0],
-                        step_2: x[1],
-                        dt_const: x[2],
-                        ratio_1: x[3],
-                        ratio_2: x[4],
+                        step_base: x[0],
+                        step_dt_mult: x[1],
+                        step_dt_add: x[2],
+                        ratio_exp_base: x[3],
+                        ratio_dt_mult: x[4],
                     },
                 )
             },
