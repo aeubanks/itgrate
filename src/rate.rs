@@ -20,6 +20,20 @@ impl Params {
             ratio_2: F1::cst(ratio_2),
         }
     }
+
+    pub fn to_vec(&self) -> Vec<f64> {
+        vec![
+            self.step_1.value(),
+            self.step_2.value(),
+            self.dt_const.value(),
+            self.ratio_1.value(),
+            self.ratio_2.value(),
+        ]
+    }
+
+    pub fn from_vec(v: &[f64]) -> Self {
+        Self::new(v[0], v[1], v[2], v[3], v[4])
+    }
 }
 
 struct State {

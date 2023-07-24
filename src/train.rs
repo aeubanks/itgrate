@@ -2,20 +2,6 @@ use crate::chart::Chart;
 use crate::rate::{rate, Params};
 use autodiff::F1;
 
-fn params_to_vec(params: Params) -> Vec<f64> {
-    vec![
-        params.step_1.value(),
-        params.step_2.value(),
-        params.dt_const.value(),
-        params.ratio_1.value(),
-        params.ratio_2.value(),
-    ]
-}
-
-fn vec_to_params(v: &[f64]) -> Params {
-    Params::new(v[0], v[1], v[2], v[3], v[4])
-}
-
 fn error(charts: &[Chart], params: Params) -> F1 {
     let mut error = F1::cst(0.);
     for chart in charts {
@@ -28,8 +14,8 @@ fn error(charts: &[Chart], params: Params) -> F1 {
 
 pub fn train(charts: &[Chart], params: Params, iterations: i32) -> Params {
     let mut learning_rate = 0.001;
-    let mut v = params_to_vec(params);
-    let mut best_err = error(charts, vec_to_params(&v));
+    let mut v = params.to_vec();
+    let mut best_err = error(charts, Params::from_vec(&v));
     let mut iterations_since_last_learning_rate_change = 0;
     let increase_learning_rate_after_iterations = 10;
     for i in 0..iterations {
@@ -55,7 +41,7 @@ pub fn train(charts: &[Chart], params: Params, iterations: i32) -> Params {
             *x = x.max(0.0);
         }
         println!("updated params: {:?}", &v_new);
-        let err = error(charts, vec_to_params(&v_new));
+        let err = error(charts, Params::from_vec(&v_new));
         println!("err {}", err.value());
         if err > best_err {
             learning_rate *= 0.5;
@@ -73,5 +59,5 @@ pub fn train(charts: &[Chart], params: Params, iterations: i32) -> Params {
         }
     }
 
-    vec_to_params(&v)
+    Params::from_vec(&v)
 }
