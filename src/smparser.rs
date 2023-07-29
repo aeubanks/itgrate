@@ -23,13 +23,13 @@ fn parse_msd(buf: &str) -> Option<HashMap<String, Vec<String>>> {
         }
         let c = split.chars().next().unwrap();
         if c != '#' {
-            println!("No #: {}", split);
+            println!("No #: {split}");
             return None;
         }
         let colon = match split.find(':') {
             Some(c) => c,
             None => {
-                println!("No :: {}", split);
+                println!("No :: {split}");
                 return None;
             }
         };
@@ -280,7 +280,7 @@ fn parse_steps(buf: &str, bpms: &BPMs) -> Option<Vec<Note>> {
                     }
                     '0' | '3' | 'M' | 'L' | 'F' => {}
                     a => {
-                        println!("Unexpected {} in {}", a, line);
+                        println!("Unexpected {a} in {line}");
                         return None;
                     }
                 }
