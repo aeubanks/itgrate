@@ -27,7 +27,7 @@ impl Params {
         }
     }
 
-    pub fn to_vec(&self) -> Vec<f64> {
+    pub fn to_vec(self) -> Vec<f64> {
         vec![
             self.step_base.value(),
             self.step_dt_mult.value(),

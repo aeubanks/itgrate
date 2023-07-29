@@ -92,7 +92,7 @@ fn graph_fatigues(path: &PathBuf, charts: &[(&Chart, &Vec<(f32, f32)>)]) {
     for (chart, fatigue_times) in charts {
         let times = fatigue_times.iter().map(|(a, _)| *a).collect::<Vec<_>>();
         let fatigues = fatigue_times.iter().map(|(_, a)| *a).collect::<Vec<_>>();
-        let caption = chart.description().replace("@", "\\@");
+        let caption = chart.description().replace('@', "\\@");
         a.points(times, fatigues, &[PlotOption::Caption(&caption)]);
     }
     fg.save_to_png(path, 1280, 720).unwrap();
@@ -138,7 +138,7 @@ fn main() {
         let (rating, fatigues) = rate(&chart, params);
         ratings.push((chart, rating.value(), fatigues));
     }
-    ratings.sort_by(|(_, r1, _), (_, r2, _)| r1.total_cmp(&r2));
+    ratings.sort_by(|(_, r1, _), (_, r2, _)| r1.total_cmp(r2));
 
     if let Command::Graph { graph_path } = args.command {
         let mapped = ratings.iter().map(|(a, _, c)| (a, c)).collect::<Vec<_>>();
