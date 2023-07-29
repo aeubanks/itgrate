@@ -116,18 +116,21 @@ fn main() {
     }
 
     let mut params = Params::new(
-        1.0426772798869388,
-        1.5953045722705177,
-        4.682854035466081,
-        1.2990869778713163,
-        3.8904875164935016,
+        1.167897601808474,
+        0.918811843052913,
+        9.20549137507126,
+        1.2499888072581737,
+        4.671882225839027,
     );
 
     if let Command::Train {
         gradient_descent_iterations,
     } = args.command
     {
-        params = train::train(&charts, params, gradient_descent_iterations);
+        let err;
+        (params, err) = train::train(&charts, params, gradient_descent_iterations);
+        println!("params: {:?}", params.to_vec());
+        println!("err: {err}");
     }
 
     let mut ratings = Vec::new();
@@ -151,6 +154,4 @@ fn main() {
             chart.description(),
         );
     }
-
-    println!("params: {:?}", params.to_vec());
 }
