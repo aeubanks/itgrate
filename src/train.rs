@@ -26,7 +26,7 @@ fn train_until_plateau(
     let mut learning_rate = 0.001;
     let mut v = params.to_vec();
     let mut best_err = error(charts, Params::from_vec(&v));
-    println!("initial err: {best_err}");
+    println!("initial err: {}", best_err.x);
     let mut last_plateau_error = best_err;
     let mut check_plateau_iterations = PLATEAU_ITERATIONS;
     let mut iterations_since_last_learning_rate_change = 0;
@@ -38,11 +38,10 @@ fn train_until_plateau(
                 error(
                     charts,
                     Params {
-                        step_base: x[0],
-                        step_dt_mult: x[1],
-                        step_dt_add: x[2],
-                        ratio_exp_base: x[3],
-                        ratio_dt_mult: x[4],
+                        step_dt_mult: x[0],
+                        step_dt_add: x[1],
+                        ratio_exp: x[2],
+                        ratio_dt_mult: x[3],
                     },
                 )
             },
@@ -50,6 +49,10 @@ fn train_until_plateau(
         );
         let mut v_new = v.clone();
         for (x, g) in v_new.iter_mut().zip(grad.iter()) {
+            if !g.is_finite() {
+                println!("invalid gradient {g}");
+                std::process::exit(1);
+            }
             *x -= g * learning_rate;
             *x = x.max(0.0);
         }
@@ -90,16 +93,13 @@ fn mutate_params(mut params: Params) -> Params {
     let mut rng = rand::thread_rng();
     let range = Uniform::from(0.9..1.1);
     if rng.gen() {
-        params.step_base *= range.sample(&mut rng);
-    }
-    if rng.gen() {
         params.step_dt_mult *= range.sample(&mut rng);
     }
     if rng.gen() {
         params.step_dt_add *= range.sample(&mut rng);
     }
     if rng.gen() {
-        params.ratio_exp_base *= range.sample(&mut rng);
+        params.ratio_exp *= range.sample(&mut rng);
     }
     if rng.gen() {
         params.ratio_dt_mult *= range.sample(&mut rng);

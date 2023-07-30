@@ -116,11 +116,10 @@ fn main() {
     }
 
     let mut params = Params::new(
-        1.167897601808474,
-        0.918811843052913,
-        9.20549137507126,
-        1.2499888072581737,
-        4.671882225839027,
+        1.781343146296855,
+        8.024635030846703,
+        0.5141931948484542,
+        0.0009524517953956913,
     );
 
     if let Command::Train {
@@ -129,6 +128,7 @@ fn main() {
     {
         let err;
         (params, err) = train::train(&charts, params, gradient_descent_iterations);
+        println!("-------------");
         println!("params: {:?}", params.to_vec());
         println!("err: {err}");
     }

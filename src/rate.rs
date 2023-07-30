@@ -1,44 +1,35 @@
 use crate::chart::Chart;
-use autodiff::{Float, F1};
+use autodiff::{Zero, F1};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Params {
-    pub step_base: F1,
     pub step_dt_mult: F1,
     pub step_dt_add: F1,
-    pub ratio_exp_base: F1,
+    pub ratio_exp: F1,
     pub ratio_dt_mult: F1,
 }
 
 impl Params {
-    pub fn new(
-        step_base: f64,
-        step_dt_mult: f64,
-        step_dt_add: f64,
-        ratio_exp_base: f64,
-        ratio_dt_mult: f64,
-    ) -> Self {
+    pub fn new(step_dt_mult: f64, step_dt_add: f64, ratio_exp: f64, ratio_dt_mult: f64) -> Self {
         Self {
-            step_base: F1::cst(step_base),
             step_dt_mult: F1::cst(step_dt_mult),
             step_dt_add: F1::cst(step_dt_add),
-            ratio_exp_base: F1::cst(ratio_exp_base),
+            ratio_exp: F1::cst(ratio_exp),
             ratio_dt_mult: F1::cst(ratio_dt_mult),
         }
     }
 
     pub fn to_vec(self) -> Vec<f64> {
         vec![
-            self.step_base.value(),
             self.step_dt_mult.value(),
             self.step_dt_add.value(),
-            self.ratio_exp_base.value(),
+            self.ratio_exp.value(),
             self.ratio_dt_mult.value(),
         ]
     }
 
     pub fn from_vec(v: &[f64]) -> Self {
-        Self::new(v[0], v[1], v[2], v[3], v[4])
+        Self::new(v[0], v[1], v[2], v[3])
     }
 }
 
@@ -59,21 +50,23 @@ impl State {
         }
     }
     fn step(&mut self, time: f32) {
-        let dt = F1::cst(time - self.last_time + 1.0).ln();
+        let dt = F1::cst((time - self.last_time + 1.0).ln());
         assert!(dt.value() >= 0.);
 
-        let ratio = self
-            .params
-            .ratio_exp_base
-            .pow(-self.params.ratio_dt_mult * dt);
+        let ratio = if dt.is_zero() {
+            F1::cst(1.0)
+        } else {
+            F1::cst(1.0)
+                / (F1::cst(1.0) + (self.params.ratio_dt_mult * dt).pow(self.params.ratio_exp))
+        };
 
         if ratio.value() < 0.0 || ratio.value() > 1.0 {
             panic!("unexpected ratio: {}, dt {}", ratio, dt);
         }
 
         self.cur_fatigue *= ratio;
-        self.cur_fatigue += self.params.step_base
-            + F1::cst(1.0) / (dt * self.params.step_dt_mult + self.params.step_dt_add);
+        self.cur_fatigue +=
+            F1::cst(1.0) / (dt * self.params.step_dt_mult + self.params.step_dt_add);
 
         if self.cur_fatigue > self.max_fatigue {
             self.max_fatigue = self.cur_fatigue;
