@@ -1,20 +1,18 @@
 use crate::chart::Chart;
-use autodiff::{Zero, F1};
+use autodiff::{Float, Zero, F1};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Params {
     pub step_dt_mult: F1,
     pub step_dt_add: F1,
-    pub ratio_exp: F1,
     pub ratio_dt_mult: F1,
 }
 
 impl Params {
-    pub fn new(step_dt_mult: f64, step_dt_add: f64, ratio_exp: f64, ratio_dt_mult: f64) -> Self {
+    pub fn new(step_dt_mult: f64, step_dt_add: f64, ratio_dt_mult: f64) -> Self {
         Self {
             step_dt_mult: F1::cst(step_dt_mult),
             step_dt_add: F1::cst(step_dt_add),
-            ratio_exp: F1::cst(ratio_exp),
             ratio_dt_mult: F1::cst(ratio_dt_mult),
         }
     }
@@ -23,13 +21,12 @@ impl Params {
         vec![
             self.step_dt_mult.value(),
             self.step_dt_add.value(),
-            self.ratio_exp.value(),
             self.ratio_dt_mult.value(),
         ]
     }
 
     pub fn from_vec(v: &[f64]) -> Self {
-        Self::new(v[0], v[1], v[2], v[3])
+        Self::new(v[0], v[1], v[2])
     }
 }
 
@@ -56,8 +53,7 @@ impl State {
         let ratio = if dt.is_zero() {
             F1::cst(1.0)
         } else {
-            F1::cst(1.0)
-                / (F1::cst(1.0) + (self.params.ratio_dt_mult * dt).pow(self.params.ratio_exp))
+            (-self.params.ratio_dt_mult * dt).exp()
         };
 
         if ratio.value() < 0.0 || ratio.value() > 1.0 {

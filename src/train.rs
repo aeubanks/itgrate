@@ -40,8 +40,7 @@ fn train_until_plateau(
                     Params {
                         step_dt_mult: x[0],
                         step_dt_add: x[1],
-                        ratio_exp: x[2],
-                        ratio_dt_mult: x[3],
+                        ratio_dt_mult: x[2],
                     },
                 )
             },
@@ -97,9 +96,6 @@ fn mutate_params(mut params: Params) -> Params {
     }
     if rng.gen() {
         params.step_dt_add *= range.sample(&mut rng);
-    }
-    if rng.gen() {
-        params.ratio_exp *= range.sample(&mut rng);
     }
     if rng.gen() {
         params.ratio_dt_mult *= range.sample(&mut rng);
