@@ -47,7 +47,7 @@ impl State {
         }
     }
     fn step(&mut self, time: f32) {
-        let dt = F1::cst((time - self.last_time + 1.0).ln());
+        let dt = F1::cst(time - self.last_time);
         assert!(dt.value() >= 0.);
 
         let ratio = if dt.is_zero() {
