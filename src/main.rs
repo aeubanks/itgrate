@@ -115,7 +115,7 @@ fn main() {
         std::process::exit(1);
     }
 
-    let mut params = Params::new(1.6725047878328008, 22.69176212395888, 0.03094850290834286);
+    let mut params = Params::default();
 
     if let Command::Train {
         gradient_descent_iterations,

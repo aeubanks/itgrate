@@ -30,6 +30,12 @@ impl Params {
     }
 }
 
+impl Default for Params {
+    fn default() -> Self {
+        Self::new(1.6725047878328008, 22.69176212395888, 0.03094850290834286)
+    }
+}
+
 struct State {
     cur_fatigue: F1,
     max_fatigue: F1,
@@ -81,4 +87,25 @@ pub fn rate(chart: &Chart, params: Params) -> (F1, Vec<(f32, f32)>) {
         fatigues.push((note.time, fatigue.cur_fatigue.value() as f32))
     }
     (fatigue.max_fatigue, fatigues)
+}
+
+#[test]
+fn rate_sanity_tests() {
+    let params = Params::default();
+    assert!(
+        rate(&Chart::stream_with_arrowless_break(200., 16, 0), params)
+            < rate(&Chart::stream_with_8ths_break(200., 16, 0), params)
+    );
+    assert!(
+        rate(&Chart::stream_unbroken(200., 16, 0), params)
+            < rate(&Chart::stream_with_arrowless_break(200., 16, 0), params)
+    );
+    assert!(
+        rate(&Chart::stream_unbroken(200., 16, 0), params)
+            < rate(&Chart::stream_unbroken(200., 17, 0), params)
+    );
+    assert!(
+        rate(&Chart::stream_unbroken(200., 16, 0), params)
+            < rate(&Chart::stream_unbroken(201., 16, 0), params)
+    );
 }
