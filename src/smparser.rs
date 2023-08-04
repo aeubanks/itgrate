@@ -341,19 +341,21 @@ pub fn parse(buf: &str) -> Vec<Chart> {
         parse_bpms(&bpms[0]).unwrap()
     };
     if let Some(all_notes) = msd.get("NOTES") {
-        for notes in all_notes {
-            let (style, difficulty, rating, steps) = split_notes(notes).unwrap();
-            if style != "dance-single" {
-                continue;
-            }
-            if difficulty == "Edit" {
-                continue;
-            }
+        let song_charts = all_notes
+            .iter()
+            .map(|n| split_notes(n).unwrap())
+            .filter(|(style, difficulty, _, _)| style == "dance-single" && difficulty != "Edit")
+            .collect::<Vec<_>>();
+        for (_, difficulty, rating, steps) in &song_charts {
             charts.push(Chart {
                 title: title.clone(),
-                difficulty,
+                difficulty: if song_charts.len() > 1 {
+                    difficulty.clone()
+                } else {
+                    "".to_owned()
+                },
                 notes: parse_steps(&steps, &bpms).unwrap(),
-                rating,
+                rating: *rating,
             });
         }
     }
