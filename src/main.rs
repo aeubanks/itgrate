@@ -81,7 +81,7 @@ fn charts(
     charts
 }
 
-fn graph_fatigues(path: &PathBuf, charts: &[(&Chart, &Vec<(f32, f32)>)]) {
+fn graph_fatigues(path: &PathBuf, charts: &[(&Chart, &Vec<(f64, f64)>)]) {
     use gnuplot::*;
 
     let mut fg = gnuplot::Figure::new();

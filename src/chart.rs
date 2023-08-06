@@ -1,6 +1,6 @@
 #[derive(PartialEq, Debug)]
 pub struct Note {
-    pub time: f32,
+    pub time: f64,
 }
 
 pub struct Chart {
@@ -22,13 +22,13 @@ impl Chart {
 
 #[allow(dead_code)]
 impl Chart {
-    pub fn stream_unbroken(bpm: f32, measures: i32, rating: i32) -> Self {
+    pub fn stream_unbroken(bpm: f64, measures: i32, rating: i32) -> Self {
         let num_notes = measures * 16;
         let mut notes = Vec::with_capacity(num_notes as usize);
         let dt = 15.0 / bpm;
         for i in 0..num_notes {
             notes.push(Note {
-                time: dt * i as f32,
+                time: dt * i as f64,
             });
         }
         Self {
@@ -40,18 +40,18 @@ impl Chart {
     }
 
     // n measures unbroken, n measure arrowless break, n measures unbroken
-    pub fn stream_with_arrowless_break(bpm: f32, measures: i32, rating: i32) -> Self {
+    pub fn stream_with_arrowless_break(bpm: f64, measures: i32, rating: i32) -> Self {
         let num_notes = measures * 16;
         let mut notes = Vec::with_capacity(num_notes as usize);
         let dt = 15.0 / bpm;
         for i in 0..num_notes {
             notes.push(Note {
-                time: dt * i as f32,
+                time: dt * i as f64,
             });
         }
         for i in 0..num_notes {
             notes.push(Note {
-                time: dt * (i + 2 * num_notes) as f32,
+                time: dt * (i + 2 * num_notes) as f64,
             });
         }
         Self {
@@ -63,23 +63,23 @@ impl Chart {
     }
 
     // n measures unbroken, n measures of 8th notes, n measures unbroken
-    pub fn stream_with_8ths_break(bpm: f32, measures: i32, rating: i32) -> Self {
+    pub fn stream_with_8ths_break(bpm: f64, measures: i32, rating: i32) -> Self {
         let num_notes = measures * 16;
         let mut notes = Vec::with_capacity(num_notes as usize);
         let dt = 15.0 / bpm;
         for i in 0..num_notes {
             notes.push(Note {
-                time: dt * i as f32,
+                time: dt * i as f64,
             });
         }
         for i in 0..(num_notes / 2) {
             notes.push(Note {
-                time: dt * (2 * i + num_notes) as f32,
+                time: dt * (2 * i + num_notes) as f64,
             });
         }
         for i in 0..num_notes {
             notes.push(Note {
-                time: dt * (i + 2 * num_notes) as f32,
+                time: dt * (i + 2 * num_notes) as f64,
             });
         }
         Self {

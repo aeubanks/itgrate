@@ -6,10 +6,10 @@ fn error(charts: &[Chart], params: Params) -> F1 {
     let mut error = F1::cst(0.);
     for chart in charts {
         let (rating, _) = rate(chart, params);
-        let dr = rating - F1::cst(chart.rating as f32 + 0.5);
+        let dr = rating - F1::cst(chart.rating as f64 + 0.5);
         error += dr * dr;
     }
-    error / F1::cst(charts.len() as f32)
+    error / F1::cst(charts.len() as f64)
 }
 
 fn train_until_plateau(

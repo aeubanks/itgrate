@@ -145,16 +145,16 @@ fn test_split_notes() {
 #[derive(Default, PartialEq, Debug)]
 struct BPMs {
     // (beat, bpm)
-    bpm_changes: Vec<(f32, f32)>,
+    bpm_changes: Vec<(f64, f64)>,
     // TODO: stops
 }
 
 impl BPMs {
-    fn interval_time(bpm: f32, beats: f32) -> f32 {
+    fn interval_time(bpm: f64, beats: f64) -> f64 {
         60. / bpm * beats
     }
 
-    fn beat_to_time(&self, beat: f32) -> f32 {
+    fn beat_to_time(&self, beat: f64) -> f64 {
         // there's probably a faster way to do this
         let mut last_change_beat = 0.;
         let mut last_bpm = 1.;
@@ -172,7 +172,7 @@ impl BPMs {
         ret
     }
 
-    fn measure_to_time(&self, measure: f32) -> f32 {
+    fn measure_to_time(&self, measure: f64) -> f64 {
         self.beat_to_time(measure * 4.)
     }
 }
@@ -215,13 +215,13 @@ fn parse_bpms(buf: &str) -> Option<BPMs> {
         let change = change.trim();
         let equal = change.find('=')?;
 
-        let time = match change[0..equal].parse::<f32>() {
+        let time = match change[0..equal].parse::<f64>() {
             Ok(c) => c,
             Err(_) => {
                 return None;
             }
         };
-        let bpm = match change[(equal + 1)..change.len()].parse::<f32>() {
+        let bpm = match change[(equal + 1)..change.len()].parse::<f64>() {
             Ok(c) => c,
             Err(_) => {
                 return None;
@@ -267,12 +267,12 @@ fn parse_steps(buf: &str, bpms: &BPMs) -> Option<Vec<Note>> {
             .lines()
             .filter(|s| !s.is_empty())
             .collect::<Vec<_>>();
-        let measures_per_line = 1.0 / lines.len() as f32;
+        let measures_per_line = 1.0 / lines.len() as f64;
         for (line_num, line) in lines.iter().enumerate() {
             for c in line.trim().chars() {
                 match c {
                     '1' | '2' | '4' => {
-                        let cur_measure = line_num as f32 * measures_per_line + measure_num as f32;
+                        let cur_measure = line_num as f64 * measures_per_line + measure_num as f64;
                         steps.push(Note {
                             time: bpms.measure_to_time(cur_measure),
                         });
@@ -354,7 +354,7 @@ pub fn parse(buf: &str) -> Vec<Chart> {
                 } else {
                     "".to_owned()
                 },
-                notes: parse_steps(&steps, &bpms).unwrap(),
+                notes: parse_steps(steps, &bpms).unwrap(),
                 rating: *rating,
             });
         }

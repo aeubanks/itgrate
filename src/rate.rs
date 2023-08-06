@@ -39,7 +39,7 @@ impl Default for Params {
 struct State {
     cur_fatigue: F1,
     max_fatigue: F1,
-    last_time: f32,
+    last_time: f64,
     params: Params,
 }
 
@@ -52,7 +52,7 @@ impl State {
             params,
         }
     }
-    fn step(&mut self, time: f32) {
+    fn step(&mut self, time: f64) {
         let dt = F1::cst(time - self.last_time);
         assert!(dt.value() >= 0.);
 
@@ -78,13 +78,13 @@ impl State {
     }
 }
 
-pub fn rate(chart: &Chart, params: Params) -> (F1, Vec<(f32, f32)>) {
+pub fn rate(chart: &Chart, params: Params) -> (F1, Vec<(f64, f64)>) {
     let mut fatigue = State::with_params(params);
     let mut fatigues = Vec::with_capacity(chart.notes.len());
     fatigues.push((0.0, 0.0));
     for note in &chart.notes {
         fatigue.step(note.time);
-        fatigues.push((note.time, fatigue.cur_fatigue.value() as f32))
+        fatigues.push((note.time, fatigue.cur_fatigue.value()))
     }
     (fatigue.max_fatigue, fatigues)
 }
